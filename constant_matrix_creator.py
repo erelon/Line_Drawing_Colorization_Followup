@@ -14,8 +14,7 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
         p += labels.reshape((labels.shape[0], -1, 512)).argmax(axis=1).sum(axis=0)
         counter += labels.shape[0]
         print(f"Done {counter} images.")
-        if i == 4:
-            break
+
 
     tmpP = p / counter
     w = 1 / ((1 - lamb) * tmpP + lamb / Q)
