@@ -1,4 +1,5 @@
 import itertools
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -44,15 +45,21 @@ def prob2img(probTensor: torch.Tensor):
     return out_img
 
 
-def gaussianDist(pt1, pt2):
+def gaussianDistTensor(pt1: torch.Tensor, pt2: torch.Tensor):
+    std = 0.25
+    sqdist = ((pt1 - pt2) ** 2).sum(axis=1)
+
+    return torch.exp(-sqdist / std)
+
+def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
     std = 0.25
     sqdist = np.sum((pt1 - pt2) ** 2, axis=1)
+
     return np.exp(-sqdist / std)
 
-
-def soft_encode_image(img):
-    soft_encoding = np.zeros((img.shape[1] ** 2, 512))
-    img = img.astype(int)
+def soft_encode_image_tensor(img):
+    soft_encoding = torch.zeros((img.shape[1] ** 2, 512))
+    img = torch.tensor(img, dtype=torch.long)
 
     CHROMA_MAX = 100
     img[:, :, 0] = img[:, :, 0] * 255.0 / 100
@@ -63,7 +70,8 @@ def soft_encode_image(img):
     discr_data = img.reshape([img.shape[1] ** 2, -1]) / 32.0
     center = (discr_data % 1 - 0.5)
 
-    discr_data_int = discr_data.astype(int)
+    discr_data_int = torch.tensor(discr_data, dtype=torch.long)
+
     rval = discr_data_int[:, 0]
     gval = discr_data_int[:, 1]
     bval = discr_data_int[:, 2]
@@ -77,15 +85,64 @@ def soft_encode_image(img):
 
     for (rv, roff), (gv, goff), (bv, boff) in params:
         indx_1d = rv + (gv << 3) + (bv << 6)
-        soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDist(center, [roff, goff, boff])
-
+        soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center, torch.tensor([roff, goff, boff]))
     # normalize, and clean up for efficient storage
-    soft_encoding = soft_encoding.astype(np.float16)
-    soft_encoding = soft_encoding / np.sum(soft_encoding, axis=1)[:, np.newaxis]
-    soft_encoding[soft_encoding < 1e-4] = 0
-    soft_encoding = soft_encoding / np.sum(soft_encoding, axis=1)[:, np.newaxis]
+    soft_encoding = torch.tensor(soft_encoding, dtype=torch.float16)
 
-    return soft_encoding.reshape((img.shape[1], img.shape[1], 512))
+    soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
+    soft_encoding[soft_encoding < 1e-4] = 0
+    soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
+
+    soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], 512))
+
+    return soft_encoding.detach().cpu().numpy()
+
+
+def soft_encode_image(img):
+    if torch.cuda.is_available():
+        img = torch.from_numpy(img)
+        img = img.to(torch.device('cuda'))
+        return soft_encode_image_tensor(img)
+    else:
+        img = torch.from_numpy(img)
+        return soft_encode_image_tensor(img)
+
+    # soft_encoding = np.zeros((img.shape[1] ** 2, 512))
+    # img = img.astype(int)
+    #
+    # CHROMA_MAX = 100
+    # img[:, :, 0] = img[:, :, 0] * 255.0 / 100
+    # img[:, :, 1][img[:, :, 1] > CHROMA_MAX] = CHROMA_MAX
+    # img[:, :, 1] = img[:, :, 1] * 255.0 / CHROMA_MAX
+    # img[:, :, 2] = img[:, :, 2] * 255.0 / (2 * np.pi)
+    #
+    # discr_data = img.reshape([img.shape[1] ** 2, -1]) / 32.0
+    # center = (discr_data % 1 - 0.5)
+    #
+    # discr_data_int = discr_data.astype(int)
+    # rval = discr_data_int[:, 0]
+    # gval = discr_data_int[:, 1]
+    # bval = discr_data_int[:, 2]
+    #
+    # rs = [(rval, 0), (np.minimum(rval + 1, 7), 1), (np.maximum(rval - 1, 0), -1)]
+    # gs = [(gval, 0), (np.minimum(gval + 1, 7), 1), (np.maximum(gval - 1, 0), -1)]
+    # bs = [(bval, 0), ((bval + 1) % 8, 1), ((bval - 1) % 8, -1)]
+    #
+    # coords = [rs, gs, bs]
+    # params = list(itertools.product(*coords))
+    #
+    # for (rv, roff), (gv, goff), (bv, boff) in params:
+    #     indx_1d = rv + (gv << 3) + (bv << 6)
+    #     soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDist(center, [roff, goff, boff])
+    # # normalize, and clean up for efficient storage
+    # soft_encoding = soft_encoding.astype(np.float16)
+    #
+    # soft_encoding = soft_encoding / np.sum(soft_encoding, axis=1)[:, np.newaxis]
+    # soft_encoding[soft_encoding < 1e-4] = 0
+    # soft_encoding = soft_encoding / np.sum(soft_encoding, axis=1)[:, np.newaxis]
+    #
+    # soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], 512))
+    # return soft_encoding
 
 
 def rgb2lch(rgb):

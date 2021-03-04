@@ -120,7 +120,7 @@ class SIGGRAPHGenerator(BaseColor):
         self.model_class = nn.Sequential(*model_class)
 
         self.upsample4 = nn.Sequential(*[nn.Upsample(scale_factor=4, mode='bilinear'), ])
-        self.softmax = nn.Sequential(*[nn.LogSoftmax(dim=1), ])
+        self.softmax = nn.Sequential(*[nn.Softmax(dim=1), ])
 
     def forward(self, input_A, input_B=None, mask_B=None):
         if (input_B is None):
