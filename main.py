@@ -10,8 +10,8 @@ from models import siggraph17
 from train_loop import train
 
 if __name__ == '__main__':
+    torch.multiprocessing.set_start_method('spawn')
     if torch.cuda.is_available():
-        torch.multiprocessing.set_start_method('spawn')
         dataset_gt = wds.WebDataset("Line_Drawing_Colorization_Followup/GT.tar").decode("rgb8").decode(
             my_decoder_GT).to_tuple("jpg;png", "__key__")
         dataset_td = wds.WebDataset("Line_Drawing_Colorization_Followup/train_data.tar").decode("rgb8").decode(
