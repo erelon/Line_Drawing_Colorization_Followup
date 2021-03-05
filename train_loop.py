@@ -13,7 +13,7 @@ def new_loss(predict, gt, device="cpu"):
     # loss = class_weights * loss
     loss = -loss.sum()
 
-    M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
+    # M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
 
     # loss += gt * M * torch.log(predict.permute([0, 2, 3, 1]))
     return loss / predict.shape[0]
