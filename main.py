@@ -5,7 +5,7 @@ from torch.utils.data import TensorDataset
 
 from DataloaderHelper import collate
 from WebDatasetHelper import my_decoder_GT, my_decoder_BW, SampleEqually
-from constant_matrix_creator import gatherClassImbalanceInfo
+from constant_matrix_creator import gatherClassImbalanceInfo, createClassMatrix
 from models import siggraph17
 from train_loop import train
 
@@ -25,7 +25,8 @@ if __name__ == '__main__':
     dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=8, collate_fn=collate)
 
     # TODO:spit train and test
-    gatherClassImbalanceInfo(dataloader)
-    # model = siggraph17(pretrained=False)
+    # createClassMatrix()
+    # gatherClassImbalanceInfo(dataloader)
+    model = siggraph17(pretrained=False)
 
-    # model = train(dataloader, model)
+    model = train(dataloader, model)

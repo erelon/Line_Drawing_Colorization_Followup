@@ -51,11 +51,13 @@ def gaussianDistTensor(pt1: torch.Tensor, pt2: torch.Tensor):
 
     return torch.exp(-sqdist / std)
 
+
 def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
     std = 0.25
     sqdist = np.sum((pt1 - pt2) ** 2, axis=1)
 
     return np.exp(-sqdist / std)
+
 
 def soft_encode_image_tensor(img):
     soft_encoding = torch.zeros((img.shape[1] ** 2, 512))
@@ -88,11 +90,11 @@ def soft_encode_image_tensor(img):
         soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center, torch.tensor([roff, goff, boff]))
     # normalize, and clean up for efficient storage
     soft_encoding = torch.tensor(soft_encoding, dtype=torch.float16)
-
+    s = datetime.now()
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding[soft_encoding < 1e-4] = 0
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
-
+    e = datetime.now() - s
     soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], 512))
 
     return soft_encoding.detach().cpu().numpy()

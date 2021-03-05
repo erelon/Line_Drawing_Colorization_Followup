@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 import torch
 
@@ -15,7 +17,6 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
         counter += labels.shape[0]
         print(f"Done {counter} images.")
 
-
     tmpP = p / counter
     w = 1 / ((1 - lamb) * tmpP + lamb / Q)
     scale = (tmpP * w).sum()
@@ -25,7 +26,7 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
     np.save(outName, w.astype(np.float32))
 
 
-def createClassMatrix(outName):
+def createClassMatrix(outName="chroma_loss"):
     labels = np.asarray([32 * int(i / 8) + 16 for i in range(64)] * 8)
     labels_len = len(labels)
     classMat = np.zeros(shape=(labels_len, labels_len))
@@ -35,5 +36,6 @@ def createClassMatrix(outName):
         for j in range(labels_len):
             if gt != labels[j]:
                 classMat[i, j] = 1
-
     np.save(outName, classMat.astype(np.float32))
+
+

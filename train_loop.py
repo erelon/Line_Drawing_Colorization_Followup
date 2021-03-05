@@ -1,15 +1,21 @@
 import gc
 import torch
+import numpy as np
 
 from CoreElements import prob2img, lch2rgb
 
 
-def new_loss(predict, gt):
+def new_loss(predict, gt, device="cpu"):
     loss = gt * torch.log(predict.permute([0, 2, 3, 1]))
     loss = loss.sum(dim=1)
-    loss = 1 * loss
+
+    # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
+    # loss = class_weights * loss
     loss = -loss.sum()
-    # loss+= gt * M * torch.log(predict.permute([0, 2, 3, 1]))
+
+    M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
+
+    # loss += gt * M * torch.log(predict.permute([0, 2, 3, 1]))
     return loss / predict.shape[0]
 
 
@@ -45,7 +51,7 @@ def train(dataloader, model, epochs=10):
             # back_to_color(labels)
             # forward
             outputs_probs = model(torch.tensor(input_batch, dtype=torch.uint8))
-            loss = criterion(outputs_probs, labels)
+            loss = criterion(outputs_probs, labels, device=device)
 
             print(loss)
 

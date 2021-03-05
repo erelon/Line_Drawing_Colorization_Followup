@@ -142,8 +142,8 @@ class SIGGRAPHGenerator(BaseColor):
 
         classes = self.model_class(conv8_3)
         upsmapeld = self.upsample4(classes)
-        unormlized = self.unnormalize_l(upsmapeld)
-        return self.softmax(unormlized)
+        # unormlized = self.unnormalize_l(upsmapeld)
+        return self.softmax(upsmapeld)
 
 
 def siggraph17(pretrained=False):
