@@ -143,11 +143,14 @@ class SIGGRAPHGenerator(BaseColor):
         classes = self.model_class(conv8_3)
         upsmapeld = self.upsample4(classes)
         # unormlized = self.unnormalize_l(upsmapeld)
-        return self.softmax(upsmapeld)
+        # self.softmax(upsmapeld)
+        return upsmapeld
 
 
-def siggraph17(pretrained=False):
+def siggraph17(pretrained_path=None):
     model = SIGGRAPHGenerator()
-    if (pretrained):
-        pass
+    if (pretrained_path):
+        model.load_state_dict(torch.load(pretrained_path, map_location=torch.device("cpu")))
+        model.eval()
+
     return model

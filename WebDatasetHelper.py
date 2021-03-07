@@ -4,7 +4,8 @@ from torch.utils.data import IterableDataset
 import random
 import webdataset as wds
 
-from CoreElements import rgb2lch, soft_encode_image
+from CoreElements import rgb2lch, soft_encode_image, lch2rgb
+from train_loop import back_to_color
 
 
 class c_Shorthands(wds.Shorthands):
@@ -60,7 +61,7 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
 def my_decoder_GT(key, value):
     im_GT = rgb2lch(value)
     im_GT = soft_encode_image(im_GT)
-    return torch.tensor(im_GT.astype(float))#.permute(2, 0, 1)
+    return torch.tensor(im_GT.astype(float))  # .permute(2, 0, 1)
 
 
 def my_decoder_BW(key, value):

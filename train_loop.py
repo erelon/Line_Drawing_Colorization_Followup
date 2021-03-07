@@ -1,22 +1,20 @@
 import gc
 import torch
 import numpy as np
-
+import torch.nn.functional as F
 from CoreElements import prob2img, lch2rgb
 
 
 def new_loss(predict, gt, device="cpu"):
-    loss = gt * torch.log(predict.permute([0, 2, 3, 1]))
-    loss = loss.sum(dim=1)
-
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
-    # loss = class_weights * loss
-    loss = -loss.sum()
+    loss = F.KLDivLoss(predict, gt.permute([0,3,1,2]))  # ,weight=class_weights )
+
+    #F.kl_div(F.log_softmax(predict),gt.permute([0,3,1,2]),log_target=True)
 
     # M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
 
     # loss += gt * M * torch.log(predict.permute([0, 2, 3, 1]))
-    return loss / predict.shape[0]
+    return loss
 
 
 def back_to_color(labels):
@@ -47,8 +45,6 @@ def train(dataloader, model, epochs=10):
         for i, (labels, input_batch) in enumerate(train_loader):
             input_batch = input_batch.to(device)
             labels = labels.to(device)
-
-            # back_to_color(labels)
             # forward
             outputs_probs = model(torch.tensor(input_batch, dtype=torch.uint8))
             loss = criterion(outputs_probs, labels, device=device)

@@ -7,7 +7,7 @@ from DataloaderHelper import collate
 from WebDatasetHelper import my_decoder_GT, my_decoder_BW, SampleEqually
 from constant_matrix_creator import gatherClassImbalanceInfo, createClassMatrix
 from models import siggraph17
-from train_loop import train
+from train_loop import train, back_to_color
 
 if __name__ == '__main__':
     if torch.cuda.is_available():
@@ -22,11 +22,19 @@ if __name__ == '__main__':
         dataset_td = wds.WebDataset("train_data.tar").decode("rgb8").decode(
             my_decoder_BW).to_tuple("jpg;png", "__key__")
         dataset = SampleEqually([dataset_gt, dataset_td])
-    dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=8, collate_fn=collate)
+    dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=8, collate_fn=collate,
+                                             prefetch_factor=1)
 
     # TODO:spit train and test
     # createClassMatrix()
     # gatherClassImbalanceInfo(dataloader)
-    model = siggraph17(pretrained=False)
 
+    model = siggraph17(pretrained_path=None)
     model = train(dataloader, model)
+
+
+    #     back_to_color(model(torch.tensor(input_batch, dtype=torch.uint8)))
+    # model = siggraph17(pretrained_path="model_iter6")
+    # for i, (labels, input_batch) in enumerate(dataloader):
+
+

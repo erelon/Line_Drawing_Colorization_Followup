@@ -7,17 +7,18 @@ from skimage import color
 
 
 def prob2img(probTensor: torch.Tensor):
+    num_of_classes = probTensor.shape[1]
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # converts probability distribtiuon to an image
     CLASS_MAP_R = torch.from_numpy(np.asarray([32 * i + 16 for i in range(8)] * 64)).to(device)
     CLASS_MAP_G = torch.from_numpy(np.asarray([32 * int(i / 8) + 16 for i in range(64)] * 8)).to(device)
-    CLASS_MAP_B = torch.from_numpy(np.asarray([32 * int(i / 64) + 16 for i in range(512)])).to(device)
+    CLASS_MAP_B = torch.from_numpy(np.asarray([32 * int(i / 64) + 16 for i in range(num_of_classes)])).to(device)
 
     eps = 1e-4
     out_img_dim = int(256)
 
     batch_sz = probTensor.shape[0]
-    logits = torch.log(probTensor.reshape(batch_sz, out_img_dim ** 2, 512) + eps)
+    logits = torch.log(probTensor.reshape(batch_sz, out_img_dim ** 2, num_of_classes) + eps)
 
     logits_sub = (logits - logits.max(dim=2, keepdim=True).values) / 0.8
 
@@ -60,8 +61,9 @@ def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
 
 
 def soft_encode_image_tensor(img):
-    soft_encoding = torch.zeros((img.shape[1] ** 2, 512))
-    img = torch.tensor(img, dtype=torch.long)
+    num_of_classes = 512
+    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes))
+    img = torch.tensor(img, dtype=torch.float)
 
     CHROMA_MAX = 100
     img[:, :, 0] = img[:, :, 0] * 255.0 / 100
@@ -90,13 +92,10 @@ def soft_encode_image_tensor(img):
         soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center, torch.tensor([roff, goff, boff]))
     # normalize, and clean up for efficient storage
     soft_encoding = torch.tensor(soft_encoding, dtype=torch.float16)
-    s = datetime.now()
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding[soft_encoding < 1e-4] = 0
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
-    e = datetime.now() - s
-    soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], 512))
-
+    soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], num_of_classes))
     return soft_encoding.detach().cpu().numpy()
 
 
@@ -148,8 +147,10 @@ def soft_encode_image(img):
 
 
 def rgb2lch(rgb):
-    return color.lab2lch(color.rgb2lab(rgb))
+    lab = color.rgb2lab(rgb)
+    return color.lab2lch(lab)
 
 
 def lch2rgb(lch):
-    return color.lab2rgb(color.lch2lab(lch.astype(float)))
+    lab = color.lch2lab(lch)
+    return color.lab2rgb(lab)
