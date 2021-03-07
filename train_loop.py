@@ -7,7 +7,8 @@ from CoreElements import prob2img, lch2rgb
 
 def new_loss(predict, gt, device="cpu"):
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
-    loss = F.kl_div(F.log_softmax(predict, dim=1), gt.permute([0, 3, 1, 2]), log_target=True)  # ,weight=class_weights )
+    loss = F.kl_div(F.log_softmax(predict, dim=1), gt.permute([0, 3, 1, 2]), log_target=True,
+                    reduction="mean")  # ,weight=class_weights )
 
     # M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
 
@@ -48,9 +49,9 @@ def train(dataloader, model, epochs=10):
             loss = criterion(outputs_probs, labels, device=device)
 
             # print(loss)
-            print(".", sep="")
-
             t_loss += loss
+            print(end="\r")
+            print(f"Estimated loss for epoch {epoch}: {t_loss / (i + 1)}", end="")
             # backward
             optimizer.zero_grad()
             loss.backward()
