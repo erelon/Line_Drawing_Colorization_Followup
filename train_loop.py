@@ -36,7 +36,7 @@ def train(dataloader, model, epochs=10):
     num_epochs = epochs
     train_loader = dataloader
     criterion = new_loss
-    optimizer = torch.optim.Adam(model.parameters())
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.5)
     model = model.to(device)
     for epoch in range(num_epochs):
         model.train()
