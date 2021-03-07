@@ -7,9 +7,7 @@ from CoreElements import prob2img, lch2rgb
 
 def new_loss(predict, gt, device="cpu"):
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
-    loss = F.kl_div(F.log_softmax(predict),gt.permute([0,3,1,2]),log_target=True)  # ,weight=class_weights )
-
-    #F.kl_div(F.log_softmax(predict),gt.permute([0,3,1,2]),log_target=True)
+    loss = F.kl_div(F.log_softmax(predict, dim=1), gt.permute([0, 3, 1, 2]), log_target=True)  # ,weight=class_weights )
 
     # M = torch.tensor(np.load("chroma_loss.npy"), dtype=torch.float32).to(device)
 
@@ -20,7 +18,7 @@ def new_loss(predict, gt, device="cpu"):
 def back_to_color(labels):
     import numpy as np
     import matplotlib.pyplot as plt
-    ims = prob2img(labels)
+    ims = prob2img(F.softmax(labels, dim=1))
     for im in ims:
         im = im.detach().cpu().numpy()
 
@@ -49,7 +47,8 @@ def train(dataloader, model, epochs=10):
             outputs_probs = model(torch.tensor(input_batch, dtype=torch.uint8))
             loss = criterion(outputs_probs, labels, device=device)
 
-            print(loss)
+            # print(loss)
+            print(".", sep="")
 
             t_loss += loss
             # backward
@@ -62,5 +61,5 @@ def train(dataloader, model, epochs=10):
             # predict
             # _, predicted = torch.max(outputs.data, 1)
         torch.save(model.state_dict(), f"model_iter{epoch}")
-        print(f"Loss for epoch {epoch}: {t_loss / (i + 1)}")
+        print(f"\nLoss for epoch {epoch}: {t_loss / (i + 1)}")
     return model
