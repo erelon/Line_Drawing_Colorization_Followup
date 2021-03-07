@@ -7,7 +7,7 @@ from CoreElements import prob2img, lch2rgb
 
 def new_loss(predict, gt, device="cpu"):
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
-    loss = F.KLDivLoss(predict, gt.permute([0,3,1,2]))  # ,weight=class_weights )
+    loss = F.kl_div(F.log_softmax(predict),gt.permute([0,3,1,2]),log_target=True)  # ,weight=class_weights )
 
     #F.kl_div(F.log_softmax(predict),gt.permute([0,3,1,2]),log_target=True)
 
