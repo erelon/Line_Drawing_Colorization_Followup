@@ -50,8 +50,8 @@ def train(dataloader, model, epochs=10):
 
             # print(loss)
             t_loss += loss
-            print(end="\r")
-            print(f"Estimated loss for epoch {epoch}: {t_loss / (i + 1)}", end="")
+            print(end="\r\r")
+            print(f"Estimated loss for epoch {epoch}: {t_loss / (i + 1)}\nNumber of batches dealt with: {i+1}", end="")
             # backward
             optimizer.zero_grad()
             loss.backward()
