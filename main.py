@@ -30,4 +30,6 @@ if __name__ == '__main__':
         my_decoder_BW).to_tuple("jpg;png", "__key__")
     dataloader = torch.utils.data.DataLoader(dataset_td)
     for i, (input_batch) in enumerate(dataloader):
-        back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8)))
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        model = model.to(device)
+        back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8).to(device)))
