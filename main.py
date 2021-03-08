@@ -15,7 +15,7 @@ if __name__ == '__main__':
     dataset_td = wds.WebDataset("train_data_train.tar").decode("rgb8").decode(
         my_decoder_BW).to_tuple("jpg;png", "__key__")
     dataset = SampleEqually([dataset_gt, dataset_td])
-    dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=64, collate_fn=collate,
+    dataloader = torch.utils.data.DataLoader(dataset, num_workers=4, batch_size=16, collate_fn=collate,
                                              prefetch_factor=1)
 
     # TODO:spit train and test
