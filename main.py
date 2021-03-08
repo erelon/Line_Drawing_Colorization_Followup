@@ -22,14 +22,14 @@ if __name__ == '__main__':
     # createClassMatrix()
     # gatherClassImbalanceInfo(dataloader)
     #
-    # model = siggraph17(pretrained_path=None)
-    # model = train(dataloader, model)
-
     model = siggraph17(pretrained_path="model_iter0")
-    dataset_td = wds.WebDataset("train_data_train.tar").decode("rgb8").decode(
-        my_decoder_BW).to_tuple("jpg;png", "__key__")
-    dataloader = torch.utils.data.DataLoader(dataset_td)
-    for i, (input_batch) in enumerate(dataloader):
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        model = model.to(device)
-        back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8).to(device)))
+    model = train(dataloader, model)
+
+    # model = siggraph17(pretrained_path="model_iter0")
+    # dataset_td = wds.WebDataset("train_data_train.tar").decode("rgb8").decode(
+    #     my_decoder_BW).to_tuple("jpg;png", "__key__")
+    # dataloader = torch.utils.data.DataLoader(dataset_td)
+    # for i, (input_batch) in enumerate(dataloader):
+    #     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    #     model = model.to(device)
+    #     back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8).to(device)))
