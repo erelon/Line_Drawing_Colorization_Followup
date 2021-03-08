@@ -21,13 +21,13 @@ if __name__ == '__main__':
     # TODO:spit train and test
     # createClassMatrix()
     # gatherClassImbalanceInfo(dataloader)
+    #
+    # model = siggraph17(pretrained_path=None)
+    # model = train(dataloader, model)
 
-    model = siggraph17(pretrained_path=None)
-    model = train(dataloader, model)
-
-    # model = siggraph17(pretrained_path="model_iter0")
-    # dataset_td = wds.WebDataset("train_data.tar").decode("rgb8").decode(
-    #     my_decoder_BW).to_tuple("jpg;png", "__key__")
-    # dataloader = torch.utils.data.DataLoader(dataset_td)
-    # for i, (input_batch) in enumerate(dataloader):
-    #     back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8)))
+    model = siggraph17(pretrained_path="model_iter0")
+    dataset_td = wds.WebDataset("train_data.tar").decode("rgb8").decode(
+        my_decoder_BW).to_tuple("jpg;png", "__key__")
+    dataloader = torch.utils.data.DataLoader(dataset_td)
+    for i, (input_batch) in enumerate(dataloader):
+        back_to_color(model(torch.tensor(input_batch[0], dtype=torch.uint8)))
