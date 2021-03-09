@@ -60,9 +60,9 @@ def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
     return np.exp(-sqdist / std)
 
 
-def soft_encode_image_tensor(img):
+def soft_encode_image_tensor(img, device):
     num_of_classes = 512
-    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes))
+    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes)).to(device)
     img = torch.tensor(img, dtype=torch.float)
 
     CHROMA_MAX = 100
@@ -100,13 +100,9 @@ def soft_encode_image_tensor(img):
 
 
 def soft_encode_image(img):
-    if torch.cuda.is_available():
-        img = torch.from_numpy(img)
-        # img = img.to(torch.device('cuda'))
-        return soft_encode_image_tensor(img)
-    else:
-        img = torch.from_numpy(img)
-        return soft_encode_image_tensor(img)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    img = torch.from_numpy(img).to(device)
+    return soft_encode_image_tensor(img, device)
 
     # soft_encoding = np.zeros((img.shape[1] ** 2, 512))
     # img = img.astype(int)
