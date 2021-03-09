@@ -10,6 +10,12 @@ from models import siggraph17
 from train_loop import train, back_to_color
 
 if __name__ == '__main__':
+    try:
+        import multiprocessing as mp
+
+        mp.set_start_method('spawn', force=True)
+    except:
+        pass
     dataset_gt = wds.WebDataset("GT_train.tar").decode("rgb8").decode(
         my_decoder_GT).to_tuple("jpg;png", "__key__")
     dataset_td = wds.WebDataset("train_data_train.tar").decode("rgb8").decode(
