@@ -4,6 +4,14 @@ import numpy as np
 import torch.nn.functional as F
 from CoreElements import prob2img, lch2rgb
 
+try:
+    import torch_xla
+    import torch_xla.core.xla_model as xm
+
+    TPU = True
+except:
+    TPU = F
+
 
 def new_loss(predict, gt, device="cpu"):
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
@@ -31,7 +39,10 @@ def back_to_color(labels):
 
 
 def train(dataloader, model, epochs=10):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    if TPU:
+        device = xm.xla_device()
+    else:
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     print(f"working on device: {device}")
     num_epochs = epochs
     train_loader = dataloader
@@ -51,7 +62,8 @@ def train(dataloader, model, epochs=10):
             # print(loss)
             t_loss += loss
             print(end="\r\r")
-            print(f"Estimated loss for epoch {epoch}: {t_loss / (i + 1)}\nNumber of batches dealt with: {i+1}", end="")
+            print(f"Estimated loss for epoch {epoch}: {t_loss / (i + 1)}\nNumber of batches dealt with: {i + 1}",
+                  end="")
             # backward
             optimizer.zero_grad()
             loss.backward()
