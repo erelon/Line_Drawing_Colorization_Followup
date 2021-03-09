@@ -56,7 +56,7 @@ def train(dataloader, model, epochs=10):
             input_batch = input_batch.to(device)
             labels = labels.to(device)
             # forward
-            outputs_probs = model(torch.tensor(input_batch, dtype=torch.uint8))
+            outputs_probs = model(torch.tensor(input_batch, dtype=torch.float32))
             loss = criterion(outputs_probs, labels, device=device)
 
             # print(loss)
