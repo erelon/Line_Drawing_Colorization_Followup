@@ -7,7 +7,10 @@ from CoreElements import prob2img, lch2rgb
 try:
     import torch_xla
     import torch_xla.core.xla_model as xm
-except:
+
+    TPU = True
+except ModuleNotFoundError:
+    TPU = False
     pass
 
 
@@ -37,9 +40,10 @@ def back_to_color(labels):
 
 
 def train(dataloader, model, epochs=10):
-    try:
+    print(TPU)
+    if TPU:
         device = xm.xla_device()
-    except NameError:
+    else:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     print(f"working on device: {device}")
     num_epochs = epochs
