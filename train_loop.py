@@ -39,7 +39,7 @@ def back_to_color(labels):
 def train(dataloader, model, epochs=10):
     try:
         device = xm.xla_device()
-    except:
+    except NameError:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     print(f"working on device: {device}")
     num_epochs = epochs
