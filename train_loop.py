@@ -4,15 +4,6 @@ import numpy as np
 import torch.nn.functional as F
 from CoreElements import prob2img, lch2rgb
 
-try:
-    import torch_xla
-    import torch_xla.core.xla_model as xm
-
-    TPU = True
-except ModuleNotFoundError:
-    TPU = False
-    pass
-
 
 def new_loss(predict, gt, device="cpu"):
     # class_weights = torch.tensor(np.load("imbalance_vector.npy"), dtype=torch.float32).to(device)
@@ -40,10 +31,10 @@ def back_to_color(labels):
 
 
 def train(dataloader, model, epochs=10):
-    print(TPU)
-    if TPU:
+    try:
+        import torch_xla.core.xla_model as xm
         device = xm.xla_device()
-    else:
+    except ModuleNotFoundError:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     print(f"working on device: {device}")
     num_epochs = epochs
