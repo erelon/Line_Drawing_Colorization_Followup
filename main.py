@@ -17,13 +17,13 @@ if __name__ == '__main__':
         mp.set_start_method('spawn', force=True)
     except:
         pass
-    dataset_gt = wds.WebDataset("GT_train.tar").decode("rgb8").decode(
+    dataset_gt = wds.WebDataset("GT_train.tar").decode("torchrgb8").decode(
         my_decoder_GT).to_tuple("jpg;png", "__key__")
     dataset_td = wds.WebDataset("train_data_train.tar").decode("rgb8").decode(
         my_decoder_BW).to_tuple("jpg;png", "__key__")
     dataset = SampleEqually([dataset_gt, dataset_td])
     dataloader = torch.utils.data.DataLoader(dataset, num_workers=2, batch_size=8, collate_fn=collate,pin_memory=True,
-                                             prefetch_factor=2)
+                                             prefetch_factor=1)
 
     # TODO:spit train and test
     # createClassMatrix()

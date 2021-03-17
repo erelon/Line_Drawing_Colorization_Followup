@@ -59,8 +59,10 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
 
 
 def my_decoder_GT(key, value):
-    im_GT = rgb2lch(value)
+    im_GT = rgb2lch(value.reshape(256,256,3))
     im_GT = soft_encode_image(im_GT)
+    if type(im_GT) is torch.Tensor:
+        return im_GT
     return torch.tensor(im_GT.astype(float))  # .permute(2, 0, 1)
 
 
