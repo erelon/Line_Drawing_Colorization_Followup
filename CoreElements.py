@@ -80,8 +80,9 @@ def soft_encode_image_tensor(img, device):
     gval = discr_data_int[:, 1]
     bval = discr_data_int[:, 2]
 
-    rs = [(rval, 0), (np.minimum(rval + 1, 7), 1), (np.maximum(rval - 1, 0), -1)]
-    gs = [(gval, 0), (np.minimum(gval + 1, 7), 1), (np.maximum(gval - 1, 0), -1)]
+
+    rs = [(rval, 0), (torch.clamp(rval + 1,max=7), 1), (torch.clamp(rval - 1,min=0), -1)]
+    gs = [(gval, 0), (torch.clamp(gval + 1,max=7), 1), (torch.clamp(gval - 1, min=0), -1)]
     bs = [(bval, 0), ((bval + 1) % 8, 1), ((bval - 1) % 8, -1)]
 
     coords = [rs, gs, bs]

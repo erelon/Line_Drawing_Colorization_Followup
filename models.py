@@ -31,7 +31,7 @@ class SIGGRAPHGenerator(BaseColor):
         # Conv1
         TEMP = 4
         SIZE = int(256 / TEMP)
-        model1 = [nn.Conv2d(TEMP, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
+        model1 = [nn.Conv2d(1, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
         model1 += [nn.Conv2d(SIZE, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
@@ -128,7 +128,7 @@ class SIGGRAPHGenerator(BaseColor):
         if (mask_B is None):
             mask_B = input_A * 0
 
-        conv1_2 = self.model1(torch.cat((self.normalize_l(input_A), self.normalize_ab(input_B), mask_B), dim=1))
+        conv1_2 = self.model1(self.normalize_l(input_A))
         # conv1_2 = self.model1(self.normalize_l(input_A))
         conv2_2 = self.model2(conv1_2[:, :, ::2, ::2])
         conv3_3 = self.model3(conv2_2[:, :, ::2, ::2])
