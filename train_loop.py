@@ -61,8 +61,8 @@ def train(dataloader, model, epochs=10):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            gc.collect()
-            torch.cuda.empty_cache()
+            # gc.collect()
+            # torch.cuda.empty_cache()
             # back_to_color(outputs_probs)
             # predict
             # _, predicted = torch.max(outputs.data, 1)
