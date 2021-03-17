@@ -16,8 +16,6 @@ import concurrent.futures
 
 from color_cleaner import clean_color
 
-max_thread = 10
-
 
 def downloadPic(url, folderName):
     try:
@@ -79,15 +77,15 @@ def tarify(folderName):
     return
 
 
-def scrape(base_url, folderName):
+def scrape(base_url, folderName, to_tar, start_point, end_point, max_thread):
     thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_thread)
     ths = []
     i = 0
 
-    for curr_img in reversed(range(0, 3192000)):
+    for curr_img in reversed(range(end_point, start_point)):
         if os.path.isfile(os.path.join(folderName, '%d.jpg' % curr_img)):
             continue
-        if i % 10 == 0:
+        if i % 10 == 0 and to_tar:
             sleep(1)
             th = thread_pool.submit(tarify, folderName)
             th.result()
@@ -111,6 +109,14 @@ def parseCLI():
                         help='URL of the website to crawl in')
     parser.add_argument('-f', '--folderName', type=str, dest='folderName', default="out",
                         help='Crawl output folder')
+    parser.add_argument('-t', '--save_to_tar', type=bool, dest='to_tar', default=True,
+                        help="Set true if you want all the data to be spited to train and test in tar files")
+    parser.add_argument('-th', '--threads', type=int, dest="max_thread", default=10,
+                        help="Amount of threads to work with")
+    parser.add_argument('-s', '--start_point', type=int, dest="start_point", default=3192000,
+                        help="Where to start the download process.")
+    parser.add_argument('-e', '--end_point', type=int, dest="end_point", default=0,
+                        help="Where to end the download process.")
 
     args = parser.parse_args()
     return args
@@ -124,6 +130,19 @@ if __name__ == "__main__":
     os.makedirs(args.folderName + "/GT", exist_ok=True)
     os.makedirs(args.folderName + "/train_data", exist_ok=True)
 
-    scrape(args.url, args.folderName)
+    if args.start_point < args.end_point:
+        tmp = args.start_point
+        args.start_point = args.end_point
+        args.end_point = tmp
+
+    if args.to_tar:
+        y_n = ""
+    else:
+        y_n = "not "
+    print(
+        f"Beep Boop. I'm going to download from the site {args.url} to the folder {args.folderName} from page"
+        f" {args.start_point} to page {args.end_point} using {args.max_thread} threads and {y_n}split the data to train and test in a tar file.")
+
+    scrape(args.url, args.folderName, args.to_tar, args.start_point, args.end_point, args.max_thread)
 
     print("done")
