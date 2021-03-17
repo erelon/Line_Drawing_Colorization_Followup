@@ -89,7 +89,9 @@ def soft_encode_image_tensor(img, device):
 
     for (rv, roff), (gv, goff), (bv, boff) in params:
         indx_1d = rv + (gv << 3) + (bv << 6)
-        soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center, torch.tensor([roff, goff, boff]))
+        soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center,
+                                                                               torch.tensor([roff, goff, boff]).to(
+                                                                                   device))
     # normalize, and clean up for efficient storage
     soft_encoding = torch.tensor(soft_encoding, dtype=torch.float16)
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
