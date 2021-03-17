@@ -137,25 +137,14 @@ def linerize(pics):
     :return: Linearized pics
     """
     line_pics = []
-    neiborhood8 = np.ones((3, 3), dtype=np.uint8)
     for pic in pics:
         gray_form = cv2.cvtColor(pic, cv2.COLOR_BGR2GRAY)
-        img_dilate = cv2.erode(gray_form, neiborhood8, iterations=2)
-        img_dilate = cv2.dilate(img_dilate, neiborhood8, iterations=4)
-
-        img_diff = cv2.absdiff(gray_form, img_dilate)
-        img_diff = cv2.multiply(img_diff, 3)
-        img_line = cv2.bitwise_not(img_diff)
-
-        kernel = np.ones((8, 8), np.float32) / 64
-        img_line = cv2.filter2D(img_line, -1, kernel)
-        img_line = cv2.dilate(img_line, neiborhood8, iterations=1)
-        img_binary = cv2.adaptiveThreshold(img_line, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 8)
-        # _, img_binary = cv2.threshold(img_line, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
+        img_blur = cv2.GaussianBlur(gray_form, (21, 21), 0, 0)
+        img_blend = cv2.divide(gray_form, img_blur, scale=256)
+        img_binary = cv2.adaptiveThreshold(img_blend, 250, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 8)
         img_line_tmp = np.zeros_like(img_binary)
-        img_line_tmp[img_binary > 200] = 255
-        img_line = img_line_tmp
+        img_line_tmp[img_binary > 180] = 255
+        img_line = cv2.cvtColor(img_line_tmp, cv2.COLOR_GRAY2RGB)
         line_pics.append(img_line)
     return line_pics
 

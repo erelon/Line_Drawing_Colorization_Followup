@@ -1,6 +1,6 @@
 import multiprocessing
 import os
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 import tarfile
 import urllib
 from time import sleep
@@ -100,6 +100,17 @@ def scrape(base_url, folderName, to_tar, start_point, end_point, max_thread):
     thread_pool.shutdown()
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise ArgumentTypeError('Boolean value expected.')
+
+
 def parseCLI():
     desc = u'{0} [Args] [Options]\nDetailed options -h or --help'.format(__file__)
 
@@ -109,7 +120,7 @@ def parseCLI():
                         help='URL of the website to crawl in')
     parser.add_argument('-f', '--folderName', type=str, dest='folderName', default="out",
                         help='Crawl output folder')
-    parser.add_argument('-t', '--save_to_tar', type=bool, dest='to_tar', default=True,
+    parser.add_argument('-t', '--save_to_tar', type=str2bool, dest='to_tar', default=True,
                         help="Set true if you want all the data to be spited to train and test in tar files")
     parser.add_argument('-th', '--threads', type=int, dest="max_thread", default=10,
                         help="Amount of threads to work with")
