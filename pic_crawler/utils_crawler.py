@@ -107,9 +107,9 @@ def parseCLI():
 
     parser = ArgumentParser(description=desc)
 
-    parser.add_argument('-u', '--url', type=str, dest='url', required=True, default="https://www.zerochan.net/full/",
+    parser.add_argument('-u', '--url', type=str, dest='url', default="https://www.zerochan.net/full/",
                         help='URL of the website to crawl in')
-    parser.add_argument('-f', '--folderName', type=str, dest='folderName', required=True, default="out",
+    parser.add_argument('-f', '--folderName', type=str, dest='folderName', default="out",
                         help='Crawl output folder')
 
     args = parser.parse_args()
