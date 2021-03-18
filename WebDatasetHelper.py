@@ -67,7 +67,9 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
                     return
 
 
-def my_decoder_GT(data):
+def my_decoder_GT(key, data):
+    if "gt" not in key.lower():
+        return None
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()
@@ -82,7 +84,9 @@ def my_decoder_GT(data):
     return torch.tensor(im_GT.astype(float))  # .permute(2, 0, 1)
 
 
-def my_decoder_BW(data):
+def my_decoder_BW(key, data):
+    if "train" not in key.lower():
+        return None
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()

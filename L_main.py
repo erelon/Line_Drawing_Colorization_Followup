@@ -18,20 +18,19 @@ if __name__ == '__main__':
         mp.set_start_method('spawn', force=True)
     except:
         pass
-    dataset = wds.WebDataset("train.tar") \
-        .decode(wds.handle_extension("gt.jpg", my_decoder_GT),
-                wds.handle_extension("train.jpg", my_decoder_BW)).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
+    dataset = wds.WebDataset("train.tar",length=float("inf")) \
+        .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
     # .decode("torchrgb8").decode(
     # my_decoder_GT).to_tuple("jpg;png", "__key__")
 
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None,num_workers=2)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
 
-    for labels, train_data, name in dataloader:
-        x = 5
+    # for labels, train_data, name in dataloader:
+    #     x = 5
     # TODO:spit train and test
     # createClassMatrix()
     # gatherClassImbalanceInfo(dataloader)
     #
-    # model = siggraph17_L(pretrained_path=None)
-    # trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=50)
-    # trainer.fit(model, dataloader)
+    model = siggraph17_L(pretrained_path=None)
+    trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=50)
+    trainer.fit(model, dataloader)
