@@ -63,7 +63,6 @@ def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
 def soft_encode_image_tensor(img, device):
     num_of_classes = 512
     soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes)).to(device)
-    img = torch.tensor(img, dtype=torch.float)
 
     CHROMA_MAX = 100
     img[:, :, 0] = img[:, :, 0] * 255.0 / 100
@@ -74,7 +73,7 @@ def soft_encode_image_tensor(img, device):
     discr_data = img.reshape([img.shape[1] ** 2, -1]) / 32.0
     center = (discr_data % 1 - 0.5)
 
-    discr_data_int = torch.tensor(discr_data, dtype=torch.long)
+    discr_data_int = discr_data.type(torch.long)
 
     rval = discr_data_int[:, 0]
     gval = discr_data_int[:, 1]
@@ -93,12 +92,12 @@ def soft_encode_image_tensor(img, device):
                                                                                torch.tensor([roff, goff, boff]).to(
                                                                                    device))
     # normalize, and clean up for efficient storage
-    soft_encoding = torch.tensor(soft_encoding, dtype=torch.float)
+    # soft_encoding = torch.tensor(soft_encoding, dtype=torch.float)
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding[soft_encoding < 1e-4] = 0
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], num_of_classes))
-    return soft_encoding#.detach().cpu().numpy()
+    return soft_encoding  # .detach().cpu().numpy()
 
 
 def soft_encode_image(img):

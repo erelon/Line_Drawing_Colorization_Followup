@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import cv2
 import torch
 from torch.utils.data import IterableDataset
@@ -75,9 +77,9 @@ def my_decoder_GT(key, data):
         img.load()
         img = img.convert("RGB")
     result = np.asarray(img)
-    value = torch.tensor(result)
 
-    im_GT = rgb2lch(value)
+    im_GT = rgb2lch(result)
+    im_GT = im_GT.astype(float)
     im_GT = soft_encode_image(im_GT)
     if type(im_GT) is torch.Tensor:
         return im_GT
@@ -91,8 +93,6 @@ def my_decoder_BW(key, data):
         img = PIL.Image.open(stream)
         img.load()
         img = img.convert("RGB")
-
-        img2 = cv2.imdecode(np.fromstring(stream.read(), np.uint8), 1)
     value = np.asarray(img)
 
     im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
