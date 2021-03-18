@@ -152,13 +152,12 @@ class SIGGRAPHGenerator(BaseColor):
         return optimizer
 
     def training_step(self, data, batch_idx):
-        labels, input_batch ,name= data
-        outputs_probs = self(torch.tensor(input_batch, dtype=torch.uint8))
+        labels, input_batch, name = data
+        outputs_probs = self(input_batch.type(torch.uint8))
         loss = F.kl_div(F.log_softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]), log_target=True,
                         reduction="mean")
         self.log('train_loss', loss)
         return loss
-
 
 
 def siggraph17_L(pretrained_path=None):
