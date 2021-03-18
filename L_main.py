@@ -22,7 +22,7 @@ if __name__ == '__main__':
     dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
         .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
 
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
 
     # for labels, train_data, name in dataloader:
     #     x = 5
