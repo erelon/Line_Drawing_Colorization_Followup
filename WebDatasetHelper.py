@@ -6,6 +6,15 @@ import webdataset as wds
 
 from CoreElements import rgb2lch, soft_encode_image, lch2rgb
 from train_loop import back_to_color
+import pickle
+import re
+import os
+
+import numpy as np
+import json
+import tempfile
+import io
+import PIL.Image
 
 
 class c_Shorthands(wds.Shorthands):
@@ -58,15 +67,28 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
                     return
 
 
-def my_decoder_GT(key, value):
-    im_GT = rgb2lch(value.reshape(256,256,3))
+def my_decoder_GT(data):
+    with io.BytesIO(data) as stream:
+        img = PIL.Image.open(stream)
+        img.load()
+        img = img.convert("RGB")
+    result = np.asarray(img)
+    value = torch.tensor(result)
+
+    im_GT = rgb2lch(value)
     im_GT = soft_encode_image(im_GT)
     if type(im_GT) is torch.Tensor:
         return im_GT
     return torch.tensor(im_GT.astype(float))  # .permute(2, 0, 1)
 
 
-def my_decoder_BW(key, value):
+def my_decoder_BW(data):
+    with io.BytesIO(data) as stream:
+        img = PIL.Image.open(stream)
+        img.load()
+        img = img.convert("RGB")
+    value = np.asarray(img)
+
     im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
     im_BW = im_BW.reshape((1, 256, 256))
     return torch.tensor(im_BW.astype("uint8"))

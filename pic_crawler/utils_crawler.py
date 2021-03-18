@@ -10,6 +10,7 @@ import urllib3
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from posixpath import basename
+import webdataset as wds
 
 import threading
 import concurrent.futures
@@ -59,20 +60,24 @@ def tarify(folderName):
     all_train_data_train = all_train_data[:train_num]
     all_train_data_test = all_train_data[train_num:]
 
-    def to_tar(file_name, data_to_save):
+    def to_tar(file_name, file):
         tar_file = tarfile.open(folderName + "/" + file_name + ".tar", mode="a")
-        if "GT" in file_name:
+        if "gt" in file.lower():
             folder = "GT"
         else:
             folder = "train_data"
-        for file in data_to_save:
-            tar_file.add(folderName + "/" + folder + "/" + file, file[file.rfind("\\") + 1:])
-            os.remove(folderName + "/" + folder + "/" + file)
+
+        tar_file.add(folderName + "/" + folder + "/" + file,
+                     file[file.rfind("\\") + 1:][:file.find(".")] + "/" + file[file.rfind("\\") + 1:])
+        os.remove(folderName + "/" + folder + "/" + file)
         tar_file.close()
 
-    for data, tar_file in zip([all_gts_train, all_gts_test, all_train_data_train, all_train_data_test],
-                              ["GT_train", "GT_test", "train_data_train", "train_data_test"]):
-        to_tar(tar_file, data)
+    for gt, train in zip(all_gts_train, all_train_data_train):
+        to_tar("train", gt)
+        to_tar("train", train)
+    for gt, train in zip(all_gts_test, all_train_data_test):
+        to_tar("test", gt)
+        to_tar("test", train)
 
     return
 

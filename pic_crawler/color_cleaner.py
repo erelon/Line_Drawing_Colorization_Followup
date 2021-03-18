@@ -164,11 +164,11 @@ def clean_color(pic_path, save_path) -> None:
     only_colorful_pics = remove_low_colored_pics(resize_pics)
 
     for i, (pic) in enumerate(only_colorful_pics):
-        gt_file_path = f"{save_path}/GT/GT_{pic_path[pic_path.rindex('/') + 1:pic_path.rindex('.')]}_{str(i)}.jpg"
+        gt_file_path = f"{save_path}/GT/{pic_path[pic_path.rindex('/') + 1:pic_path.rindex('.')]}_{str(i)}.gt.jpg"
         cv2.imwrite(gt_file_path, pic)
 
     lined_pics = linerize(only_colorful_pics)
 
     for i, (pic) in enumerate(lined_pics):
-        train_file_path = f"{save_path}/train_data/train_{pic_path[pic_path.rindex('/') + 1:pic_path.rindex('.')]}_{str(i)}.jpg"
+        train_file_path = f"{save_path}/train_data/{pic_path[pic_path.rindex('/') + 1:pic_path.rindex('.')]}_{str(i)}.train.jpg"
         cv2.imwrite(train_file_path, pic)
