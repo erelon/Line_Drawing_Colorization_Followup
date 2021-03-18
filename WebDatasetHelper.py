@@ -91,6 +91,8 @@ def my_decoder_BW(key, data):
         img = PIL.Image.open(stream)
         img.load()
         img = img.convert("RGB")
+
+        img2 = cv2.imdecode(np.fromstring(stream.read(), np.uint8), 1)
     value = np.asarray(img)
 
     im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
