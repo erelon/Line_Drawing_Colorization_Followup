@@ -86,18 +86,36 @@ def soft_encode_image_tensor(img, device):
     coords = [rs, gs, bs]
     params = list(itertools.product(*coords))
 
+    rng = range(img.shape[1] ** 2)
     for (rv, roff), (gv, goff), (bv, boff) in params:
         indx_1d = rv + (gv << 3) + (bv << 6)
-        soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center,
+        soft_encoding[rng, indx_1d] += gaussianDistTensor(center,
                                                                                torch.tensor([roff, goff, boff],
                                                                                             device=device))
+    se1 = soft_encoding.clone()
+    se2 = soft_encoding.clone()
     # normalize, and clean up for efficient storage
     # soft_encoding = torch.tensor(soft_encoding, dtype=torch.float)
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding[soft_encoding < 1e-4] = 0
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
+
+    # s1 = datetime.now()
+    # se1 = se1 / torch.sum(se1, dim=1, keepdims=True)
+    # se1[se1 < 1e-4] = 0
+    # se1 = se1 / torch.sum(se1, dim=1, keepdims=True)
+    # print("Norm m: " + str(datetime.now() - s1))
+    #
+    # s2 = datetime.now()
+    # # se2 =se2.type(torch.float)
+    # se2 = se2 / torch.sum(se2, dim=1, keepdims=True)
+    # se2[se2 < 1e-4] = 0
+    # se2 = se2 / torch.sum(se2, dim=1, keepdims=True)
+    # # se2 = se2.type(torch.float)
+    # print("T m: " + str(datetime.now() - s2))
+
     soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], num_of_classes))
-    return soft_encoding.cpu()
+    return soft_encoding
 
 
 def soft_encode_image(img):
