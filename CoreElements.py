@@ -62,7 +62,7 @@ def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
 
 def soft_encode_image_tensor(img, device):
     num_of_classes = 512
-    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes)).to(device)
+    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes), device=device)
 
     CHROMA_MAX = 100
     img[:, :, 0] = img[:, :, 0] * 255.0 / 100
@@ -89,8 +89,8 @@ def soft_encode_image_tensor(img, device):
     for (rv, roff), (gv, goff), (bv, boff) in params:
         indx_1d = rv + (gv << 3) + (bv << 6)
         soft_encoding[range(img.shape[1] ** 2), indx_1d] += gaussianDistTensor(center,
-                                                                               torch.tensor([roff, goff, boff]).to(
-                                                                                   device))
+                                                                               torch.tensor([roff, goff, boff],
+                                                                                            device=device))
     # normalize, and clean up for efficient storage
     # soft_encoding = torch.tensor(soft_encoding, dtype=torch.float)
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
