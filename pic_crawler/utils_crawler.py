@@ -60,8 +60,7 @@ def tarify(folderName):
     all_train_data_train = all_train_data[:train_num]
     all_train_data_test = all_train_data[train_num:]
 
-    def to_tar(file_name, file):
-        tar_file = tarfile.open(folderName + "/" + file_name + ".tar", mode="a")
+    def to_tar(file, tar_file):
         if "gt" in file.lower():
             folder = "GT"
         else:
@@ -73,21 +72,27 @@ def tarify(folderName):
                                                                                                   "_") + 1:file.rfind(
                                                                                                   ".")] + ".gt.jpg"
         elif file.startswith("train"):
-            new_name = file[file.rfind("\\") + 1:][file.find("_") + 1:file.find(".")] + "/" + file[file.rfind("\\") + 1:][file.find("_")+1:file.rfind(".")]+".train.jpg"
+            new_name = file[file.rfind("\\") + 1:][file.find("_") + 1:file.find(".")] + "/" + file[
+                                                                                              file.rfind("\\") + 1:][
+                                                                                              file.find(
+                                                                                                  "_") + 1:file.rfind(
+                                                                                                  ".")] + ".train.jpg"
         else:
             new_name = file[file.rfind("\\") + 1:][:file.find(".")] + "/" + file[file.rfind("\\") + 1:]
 
-        tar_file.add(folderName + "/" + folder + "/" + file,
-                     file[file.rfind("\\") + 1:][:file.find(".")] + "/" + file[file.rfind("\\") + 1:])
+        tar_file.add(folderName + "/" + folder + "/" + file, new_name)
         os.remove(folderName + "/" + folder + "/" + file)
-        tar_file.close()
 
     for gt, train in zip(all_gts_train, all_train_data_train):
-        to_tar("train", gt)
-        to_tar("train", train)
+        tar_file = tarfile.open(folderName + "/train.tar", mode="a")
+        to_tar(gt, tar_file)
+        to_tar(train, tar_file)
+        tar_file.close()
     for gt, train in zip(all_gts_test, all_train_data_test):
-        to_tar("test", gt)
-        to_tar("test", train)
+        tar_file = tarfile.open(folderName + "/test.tar", mode="a")
+        to_tar(gt, tar_file)
+        to_tar(train, tar_file)
+        tar_file.close()
 
     return
 
