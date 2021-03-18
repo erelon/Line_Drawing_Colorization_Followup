@@ -1,5 +1,6 @@
 import webdataset as wds
 import torch
+from pytorch_lightning.profiler import AdvancedProfiler
 
 from torch.utils.data import TensorDataset
 
@@ -18,8 +19,8 @@ if __name__ == '__main__':
         mp.set_start_method('spawn', force=True)
     except:
         pass
-    dataset = wds.WebDataset("train.tar",length=float("inf")) \
-        .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
+    dataset = wds.WebDataset("train.tar", length=float("inf")) \
+        .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(8)
     # .decode("torchrgb8").decode(
     # my_decoder_GT).to_tuple("jpg;png", "__key__")
 
@@ -32,5 +33,5 @@ if __name__ == '__main__':
     # gatherClassImbalanceInfo(dataloader)
     #
     model = siggraph17_L(pretrained_path=None)
-    trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=50)
+    trainer = pl.Trainer(gpus=1,log_every_n_steps=10, max_epochs=10, profiler=AdvancedProfiler(), max_steps=5)
     trainer.fit(model, dataloader)

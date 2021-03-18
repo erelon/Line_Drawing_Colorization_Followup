@@ -66,6 +66,16 @@ def tarify(folderName):
             folder = "GT"
         else:
             folder = "train_data"
+        if file.startswith("GT"):
+            new_name = file[file.rfind("\\") + 1:][file.find("_") + 1:file.find(".")] + "/" + file[
+                                                                                              file.rfind("\\") + 1:][
+                                                                                              file.find(
+                                                                                                  "_") + 1:file.rfind(
+                                                                                                  ".")] + ".gt.jpg"
+        elif file.startswith("train"):
+            new_name = file[file.rfind("\\") + 1:][file.find("_") + 1:file.find(".")] + "/" + file[file.rfind("\\") + 1:][file.find("_")+1:file.rfind(".")]+".train.jpg"
+        else:
+            new_name = file[file.rfind("\\") + 1:][:file.find(".")] + "/" + file[file.rfind("\\") + 1:]
 
         tar_file.add(folderName + "/" + folder + "/" + file,
                      file[file.rfind("\\") + 1:][:file.find(".")] + "/" + file[file.rfind("\\") + 1:])
