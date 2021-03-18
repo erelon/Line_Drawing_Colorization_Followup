@@ -31,5 +31,5 @@ if __name__ == '__main__':
     # gatherClassImbalanceInfo(dataloader)
     #
     model = siggraph17_L(pretrained_path=None)
-    trainer = pl.Trainer(gpus=1, log_every_n_steps=1, max_epochs=10, profiler=True, max_steps=4)
+    trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=200)
     trainer.fit(model, dataloader)
