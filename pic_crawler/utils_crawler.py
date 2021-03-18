@@ -83,13 +83,30 @@ def tarify(folderName):
         tar_file.add(folderName + "/" + folder + "/" + file, new_name)
         os.remove(folderName + "/" + folder + "/" + file)
 
+    def find_shard_name(tar_base_name):
+        all_tar_files = os.listdir(folderName)
+        all_tar_files = [i for i in all_tar_files if tar_base_name in i and "tar" in i]
+        if len(all_tar_files) == 0:
+            return tar_base_name + "_0000000.tar"
+        all_tar_files.sort()
+        last_tar_file = all_tar_files[-1]
+        tar_file = tarfile.open(folderName + "/" + last_tar_file, mode="a")
+        # tar_file.list(verbose=False)
+        if int(len(tar_file.getnames()) / 2) >= 1024:
+            return tar_base_name + "_" + "%07d" % (
+                        int(last_tar_file[last_tar_file.find("_") + 1:last_tar_file.rfind(".")]) + 1) + ".tar"
+        else:
+            return last_tar_file
+
     for gt, train in zip(all_gts_train, all_train_data_train):
-        tar_file = tarfile.open(folderName + "/train.tar", mode="a")
+        name = find_shard_name("train")
+        tar_file = tarfile.open(folderName + "/" + name, mode="a")
         to_tar(gt, tar_file)
         to_tar(train, tar_file)
         tar_file.close()
     for gt, train in zip(all_gts_test, all_train_data_test):
-        tar_file = tarfile.open(folderName + "/test.tar", mode="a")
+        name = find_shard_name("test")
+        tar_file = tarfile.open(folderName + "/" + name, mode="a")
         to_tar(gt, tar_file)
         to_tar(train, tar_file)
         tar_file.close()

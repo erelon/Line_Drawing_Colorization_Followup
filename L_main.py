@@ -20,9 +20,7 @@ if __name__ == '__main__':
     except:
         pass
     dataset = wds.WebDataset("train.tar", length=float("inf")) \
-        .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(8)
-    # .decode("torchrgb8").decode(
-    # my_decoder_GT).to_tuple("jpg;png", "__key__")
+        .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(6)
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
 
