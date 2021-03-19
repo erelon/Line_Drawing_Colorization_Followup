@@ -79,8 +79,7 @@ def my_decoder_GT(key, data):
         img.load()
         img = img.convert("RGB")
     result = np.asarray(img)
-    plt.imshow(result)
-    plt.show()
+
     im_GT = rgb2lch(result)
     im_GT = soft_encode_image(im_GT)
     if type(im_GT) is torch.Tensor:
