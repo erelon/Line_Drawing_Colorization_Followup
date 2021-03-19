@@ -7,7 +7,7 @@ from skimage import color
 
 
 def prob2img(probTensor: torch.Tensor):
-    num_of_classes = probTensor.shape[1]
+    num_of_classes = probTensor.shape[3]
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # converts probability distribtiuon to an image
     CLASS_MAP_R = torch.from_numpy(np.asarray([32 * i + 16 for i in range(8)] * 64)).to(device)
