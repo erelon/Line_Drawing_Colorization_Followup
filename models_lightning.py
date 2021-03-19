@@ -3,6 +3,8 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
+from train_loop import back_to_color
+
 
 class BaseColor(pl.LightningModule):
     def __init__(self):
@@ -153,6 +155,7 @@ class SIGGRAPHGenerator(BaseColor):
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
+        back_to_color(labels)
         outputs_probs = self(input_batch.type(torch.uint8))
         loss = F.kl_div(F.log_softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]), log_target=True,
                         reduction="mean")

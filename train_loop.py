@@ -46,7 +46,7 @@ def train(dataloader, model, epochs=10):
         model.train()
         t_loss = 0
         for i, (labels, input_batch) in enumerate(train_loader):
-            back_to_color(labels)
+
             input_batch = input_batch.to(device)
             labels = labels.to(device)
             # forward
