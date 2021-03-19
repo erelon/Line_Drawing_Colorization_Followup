@@ -33,7 +33,7 @@ if __name__ == '__main__':
     model = siggraph17_L(pretrained_path=None)
     if torch.cuda.is_available():
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=AdvancedProfiler("prof_log.txt"),
-                             max_steps=150)
+                             max_steps=150, distributed_backend='ddp', precision=16, amp_backend="apex")
     else:
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=5)
     trainer.fit(model, dataloader)

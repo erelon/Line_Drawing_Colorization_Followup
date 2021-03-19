@@ -90,18 +90,22 @@ def soft_encode_image_tensor(img, device):
     for (rv, roff), (gv, goff), (bv, boff) in params:
         indx_1d = rv + (gv << 3) + (bv << 6)
         soft_encoding[rng, indx_1d] += gaussianDistTensor(center,
-                                                                               torch.tensor([roff, goff, boff],
-                                                                                            device=device))
-    se1 = soft_encoding.clone()
-    se2 = soft_encoding.clone()
+                                                          torch.tensor([roff, goff, boff],
+                                                                       device=device))
+    # se1 = soft_encoding.clone()
+    # se2 = soft_encoding.clone()
     # normalize, and clean up for efficient storage
     # soft_encoding = torch.tensor(soft_encoding, dtype=torch.float)
+    if device!="cpu":
+        print("1616161616161616")
+        soft_encoding = soft_encoding.type(torch.float16)
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
     soft_encoding[soft_encoding < 1e-4] = 0
     soft_encoding = soft_encoding / torch.sum(soft_encoding, dim=1, keepdims=True)
 
     # s1 = datetime.now()
     # se1 = se1 / torch.sum(se1, dim=1, keepdims=True)
+
     # se1[se1 < 1e-4] = 0
     # se1 = se1 / torch.sum(se1, dim=1, keepdims=True)
     # print("Norm m: " + str(datetime.now() - s1))
