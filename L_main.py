@@ -39,6 +39,6 @@ if __name__ == '__main__':
     else:
         dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
             .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(1)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=1)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=5)
     trainer.fit(model, dataloader)

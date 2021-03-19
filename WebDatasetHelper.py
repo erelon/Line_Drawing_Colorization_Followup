@@ -82,14 +82,13 @@ def my_decoder_GT(key, data):
     plt.imshow(result)
     plt.show()
     im_GT = rgb2lch(result)
-    im_GT = im_GT.astype(float)
     im_GT = soft_encode_image(im_GT)
+
+    back_to_color(torch.tensor(im_GT.astype(float)).permute(2, 0, 1).unsqueeze(0))
+
     if type(im_GT) is torch.Tensor:
         return im_GT
     im_GT = torch.tensor(im_GT.astype(float))
-
-    back_to_color(im_GT.permute(2, 0, 1).unsqueeze(0))
-    return im_GT  # .permute(2, 0, 1)
 
 
 def my_decoder_BW(key, data):
