@@ -19,8 +19,8 @@ def new_loss(predict, gt, device="cpu"):
 def back_to_color(labels):
     import numpy as np
     import matplotlib.pyplot as plt
-    ims = prob2img(F.softmax(labels, dim=1))
-    for im in ims:
+    ims = prob2img(F.softmax(labels, dim=1).reshape(labels.shape[0], 512, 256, 256))
+    for im in labels:
         im = im.detach().cpu().numpy()
 
         final_img = np.moveaxis(im, [0], [-1])
@@ -46,7 +46,6 @@ def train(dataloader, model, epochs=10):
         model.train()
         t_loss = 0
         for i, (labels, input_batch) in enumerate(train_loader):
-
             input_batch = input_batch.to(device)
             labels = labels.to(device)
             # forward
