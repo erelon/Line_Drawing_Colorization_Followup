@@ -19,7 +19,7 @@ def new_loss(predict, gt, device="cpu"):
 def back_to_color(labels):
     import numpy as np
     import matplotlib.pyplot as plt
-    ims = prob2img(F.softmax(labels, dim=1).reshape(labels.shape[0], 512, 256, 256))
+    ims = prob2img(F.softmax(labels, dim=1))
     for im in ims:
         im = im.detach().cpu().numpy()
 

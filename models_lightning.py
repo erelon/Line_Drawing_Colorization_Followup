@@ -155,7 +155,7 @@ class SIGGRAPHGenerator(BaseColor):
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
-        back_to_color(labels)
+        back_to_color(labels.permute([0, 3, 1, 2]))
         outputs_probs = self(input_batch.type(torch.uint8))
         loss = F.kl_div(F.log_softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]), log_target=True,
                         reduction="mean")

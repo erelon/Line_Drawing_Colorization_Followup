@@ -70,6 +70,8 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
 
 
 def my_decoder_GT(key, data):
+    import matplotlib.pyplot as plt
+
     if "gt" not in key.lower():
         return None
     with io.BytesIO(data) as stream:
@@ -77,13 +79,17 @@ def my_decoder_GT(key, data):
         img.load()
         img = img.convert("RGB")
     result = np.asarray(img)
-
+    plt.imshow(result)
+    plt.show()
     im_GT = rgb2lch(result)
     im_GT = im_GT.astype(float)
     im_GT = soft_encode_image(im_GT)
-    # if type(im_GT) is torch.Tensor:
-    return im_GT
-    # return torch.tensor(im_GT.astype(float))  # .permute(2, 0, 1)
+    if type(im_GT) is torch.Tensor:
+        return im_GT
+    im_GT = torch.tensor(im_GT.astype(float))
+
+    back_to_color(im_GT.permute(2, 0, 1).unsqueeze(0))
+    return im_GT  # .permute(2, 0, 1)
 
 
 def my_decoder_BW(key, data):
