@@ -70,14 +70,12 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
 
 
 def my_decoder_GT(key, data):
-    import matplotlib.pyplot as plt
-
     if "gt" not in key.lower():
         return None
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()
-        img = img.convert("RGB")
+        # img = img.convert("RGB")
     result = np.asarray(img)
 
     im_GT = rgb2lch(result)

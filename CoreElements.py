@@ -64,35 +64,31 @@ def soft_encode_image_tensor(img, device):
     num_of_classes = 512
     soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes), device=device)
     img = img.type(torch.long)
+    img_shape = img.shape[1]
 
     CHROMA_MAX = 100
-    img[:, :, 0] = img[:, :, 0] * 255.0 / 100
+    img[:, :, 0] = img[:, :, 0] * (255.0 / 100)
     img[:, :, 1][img[:, :, 1] > CHROMA_MAX] = CHROMA_MAX
-    img[:, :, 1] = img[:, :, 1] * 255.0 / CHROMA_MAX
-    img[:, :, 2] = img[:, :, 2] * 255.0 / (2 * np.pi)
+    img[:, :, 1] = img[:, :, 1] * (255.0 / CHROMA_MAX)
+    img[:, :, 2] = img[:, :, 2] * (255.0 / (2 * np.pi))
 
-    discr_data = img.reshape([img.shape[1] ** 2, -1]) / 32.0
-    center = (discr_data % 1 - 0.5)
+    img = img.reshape([img_shape ** 2, -1]) / 32.0
+    center = (img % 1 - 0.5)
 
-    discr_data_int = discr_data.type(torch.long)
+    img = img.type(torch.long)
 
-    rval = discr_data_int[:, 0]
-    gval = discr_data_int[:, 1]
-    bval = discr_data_int[:, 2]
+    rval = img[:, 0]
+    gval = img[:, 1]
+    bval = img[:, 2]
 
-    rs = [(rval, 0), (torch.clamp(rval + 1, max=7), 1), (torch.clamp(rval - 1, min=0), -1)]
-    gs = [(gval, 0), (torch.clamp(gval + 1, max=7), 1), (torch.clamp(gval - 1, min=0), -1)]
-    bs = [(bval, 0), ((bval + 1) % 8, 1), ((bval - 1) % 8, -1)]
+    rval = [(rval, 0), (torch.clamp(rval + 1, max=7), 1), (torch.clamp(rval - 1, min=0), -1)]
+    gval = [(gval, 0), (torch.clamp(gval + 1, max=7), 1), (torch.clamp(gval - 1, min=0), -1)]
+    bval = [(bval, 0), ((bval + 1) % 8, 1), ((bval - 1) % 8, -1)]
 
-    # rs = [(rval, 0), (np.minimum(rval + 1, 7), 1), (np.maximum(rval - 1, 0), -1)]
-    # gs = [(gval, 0), (np.minimum(gval + 1, 7), 1), (np.maximum(gval - 1, 0), -1)]
-    # bs = [(bval, 0), ((bval + 1) % 8, 1), ((bval - 1) % 8, -1)]
+    coords = [rval, gval, bval]
 
-    coords = [rs, gs, bs]
-    params = list(itertools.product(*coords))
-
-    rng = range(img.shape[1] ** 2)
-    for (rv, roff), (gv, goff), (bv, boff) in params:
+    rng = range(img_shape ** 2)
+    for (rv, roff), (gv, goff), (bv, boff) in list(itertools.product(*coords)):
         indx_1d = rv + (gv << 3) + (bv << 6)
         soft_encoding[rng, indx_1d] += gaussianDistTensor(center, torch.tensor([roff, goff, boff], device=device))
     # se1 = soft_encoding.clone()
@@ -120,7 +116,7 @@ def soft_encode_image_tensor(img, device):
     # # se2 = se2.type(torch.float)
     # print("T m: " + str(datetime.now() - s2))
 
-    soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], num_of_classes))
+    soft_encoding = soft_encoding.reshape((img_shape, img_shape, num_of_classes))
     return soft_encoding
 
 
