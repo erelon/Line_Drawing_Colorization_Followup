@@ -1,9 +1,12 @@
 import torch
-import torch.nn as nn
-import torch.optim as optimizer
+from torch import nn
+from torch.nn import functional as F
+import pytorch_lightning as pl
+
+from CoreElements import back_to_color
 
 
-class BaseColor(nn.Module):
+class BaseColor(pl.LightningModule):
     def __init__(self):
         super(BaseColor, self).__init__()
 
@@ -123,10 +126,10 @@ class SIGGRAPHGenerator(BaseColor):
         self.softmax = nn.Sequential(*[nn.Softmax(dim=1), ])
 
     def forward(self, input_A, input_B=None, mask_B=None):
-        if (input_B is None):
-            input_B = torch.cat((input_A * 0, input_A * 0), dim=1)
-        if (mask_B is None):
-            mask_B = input_A * 0
+        # if (input_B is None):
+        #     input_B = torch.cat((input_A * 0, input_A * 0), dim=1)
+        # if (mask_B is None):
+        #     mask_B = input_A * 0
 
         conv1_2 = self.model1(self.normalize_l(input_A))
         # conv1_2 = self.model1(self.normalize_l(input_A))
@@ -146,8 +149,20 @@ class SIGGRAPHGenerator(BaseColor):
         # self.softmax(upsmapeld)
         return upsmapeld
 
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters())
+        return optimizer
 
-def siggraph17(pretrained_path=None):
+    def training_step(self, data, batch_idx):
+        labels, input_batch, name = data
+        outputs_probs = self(input_batch)
+        loss = F.kl_div(F.log_softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]), log_target=True,
+                        reduction="mean")
+        self.log('train_loss', loss)
+        return loss
+
+
+def siggraph17_L(pretrained_path=None):
     model = SIGGRAPHGenerator()
     if (pretrained_path):
         model.load_state_dict(torch.load(pretrained_path, map_location=torch.device("cpu")))

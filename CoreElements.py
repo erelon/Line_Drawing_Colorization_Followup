@@ -179,3 +179,17 @@ def rgb2lch(rgb):
 def lch2rgb(lch):
     lab = color.lch2lab(lch)
     return color.lab2rgb(lab)
+
+
+def back_to_color(labels):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    ims = prob2img(labels)
+    for im in ims:
+        im = im.detach().cpu().numpy()
+
+        final_img = np.moveaxis(im, [0], [-1])
+        # final_img = np.moveaxis(final_img, [1], [0])
+        final_im_rgb = lch2rgb(final_img.squeeze())
+        plt.imshow(final_im_rgb)
+        plt.show()

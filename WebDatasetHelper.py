@@ -8,8 +8,7 @@ import webdataset as wds
 import matplotlib.pyplot as plt
 from torchvision import datasets
 
-from CoreElements import rgb2lch, soft_encode_image, lch2rgb, rgb2lchTensor
-from train_loop import back_to_color
+from CoreElements import rgb2lch, soft_encode_image, lch2rgb, rgb2lchTensor, back_to_color
 import pickle
 import re
 import os

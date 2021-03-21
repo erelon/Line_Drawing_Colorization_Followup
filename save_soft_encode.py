@@ -16,7 +16,7 @@ if __name__ == '__main__':
     os.makedirs("preprocessed_data_tars", exist_ok=True)
 
     for i, (gt, bw, name) in enumerate(dataloader):
-        print(f"{i} / 1024")
+        print(f"{i+1} / 1024")
         os.makedirs("preprocessed_data/" + name[0][:name[0].find("/")], exist_ok=True)
         torch.save(gt, "preprocessed_data/" + name[0] + ".gt.pt")
         torch.save(bw, "preprocessed_data/" + name[0] + ".train.pt")
