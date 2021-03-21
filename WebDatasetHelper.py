@@ -83,12 +83,12 @@ def my_decoder_GT(key, data):
     t1 = datetime.now()
     im_GT = rgb2lch(result)
     e1 = datetime.now() - t1
-    print(e1)
+    print("Normal:" + str(e1))
 
     t2 = datetime.now()
     aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)))
     e2 = datetime.now() - t2
-    print(e2)
+    print("Tensor:" + str(e2))
 
     # aaa = lch2rgb(aaa.type(torch.float64).numpy())
     # plt.imshow(aaa)
