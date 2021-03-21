@@ -87,7 +87,7 @@ def my_decoder_GT(key, data):
 
     im_GT = soft_encode_image(im_GT)
 
-    back_to_color(im_GT.unsqeeze(0))
+    back_to_color(im_GT.unsqueeze(0))
 
     if type(im_GT) is torch.Tensor:
         return im_GT
