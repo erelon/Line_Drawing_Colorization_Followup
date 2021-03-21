@@ -78,10 +78,10 @@ def my_decoder_GT(key, data):
         img = PIL.Image.open(stream)
         img.load()
         # img = img.convert("RGB")
-    result = np.asarray(img)
+    result = np.asarray(img, dtype=np.float32)
 
     if torch.cuda.is_available():
-        im_GT = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)))
+        im_GT = rgb2lchTensor(torch.from_numpy(result))
     else:
         im_GT = rgb2lch(result)
 

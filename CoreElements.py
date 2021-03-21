@@ -184,9 +184,9 @@ def rgb2lchTensor(rgb):
 
     # Nonlinear distortion and linear transformation
     mask = rgb > 0.008856
+    rgb = rgb.type(torch.float16).cuda()
     rgb[mask] = torch.pow(rgb[mask], 1 / 3)
 
-    rgb = rgb.type(torch.float16).cuda()
 
     rgb[~mask] = 7.787 * rgb[~mask] + 16. / 116.
 
