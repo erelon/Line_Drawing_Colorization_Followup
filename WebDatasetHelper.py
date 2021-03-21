@@ -92,7 +92,7 @@ def my_decoder_GT(key, data):
     e2 = datetime.now() - t2
     # print("Tensor:" + str(e2))
 
-    print("Normal") if e1 < e2 else print("Tensor")
+    print("Normal " + str(e2 - e1)) if e1 < e2 else print("Tensor " + str(e1 - e2))
 
     # aaa = lch2rgb(aaa.type(torch.float64).numpy())
     # plt.imshow(aaa)
