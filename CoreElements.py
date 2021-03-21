@@ -163,6 +163,45 @@ def soft_encode_image(img):
     # return soft_encoding
 
 
+xyz_from_rgb = torch.from_numpy(np.array([[0.412453, 0.357580, 0.180423],
+                                          [0.212671, 0.715160, 0.072169],
+                                          [0.019334, 0.119193, 0.950227]], dtype=np.float16)).T
+xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float16))
+
+
+def rgb2lchTensor(rgb):
+    rgb /= 255.
+    mask = rgb > 0.04045
+    rgb[mask] = ((rgb[mask] + 0.055) / 1.055) ** 2.4
+
+    rgb[~mask] /= 12.92
+
+    # scale by CIE XYZ tristimulus values of the reference white point
+    rgb = (rgb @ xyz_from_rgb) / xyz_ref_white
+
+    # Nonlinear distortion and linear transformation
+    mask = rgb > 0.008856
+    rgb[mask] = np.cbrt(rgb[mask])
+    rgb[~mask] = 7.787 * rgb[~mask] + 16. / 116.
+
+    x, y, z = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+
+    # Vector scaling
+    L = (116. * y) - 16.
+    a = 500.0 * (x - y)
+    b = 200.0 * (y - z)
+
+    lab = torch.cat([x[..., np.newaxis] for x in [L, a, b]], axis=-1)
+
+    a, b = lab[..., 1], lab[..., 2]
+    a, b = torch.hypot(a, b), torch.atan2(b, a)
+    b += np.where(a < 0., 2 * np.pi, 0)
+
+    lab[..., 1], lab[..., 2] = a, b
+
+    return lab
+
+
 def rgb2lch(rgb):
     lab = color.rgb2lab(rgb)
     return color.lab2lch(lab)

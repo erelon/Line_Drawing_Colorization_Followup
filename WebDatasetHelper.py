@@ -5,8 +5,10 @@ import torch
 from torch.utils.data import IterableDataset
 import random
 import webdataset as wds
+import matplotlib.pyplot as plt
+from torchvision import datasets
 
-from CoreElements import rgb2lch, soft_encode_image, lch2rgb
+from CoreElements import rgb2lch, soft_encode_image, lch2rgb, rgb2lchTensor
 from train_loop import back_to_color
 import pickle
 import re
@@ -78,8 +80,25 @@ def my_decoder_GT(key, data):
         # img = img.convert("RGB")
     result = np.asarray(img)
 
+    t1 = datetime.now()
     im_GT = rgb2lch(result)
+    e1 = datetime.now() - t1
+    print(e1)
+
+    t2 = datetime.now()
+    aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float16)))
+    e2 = datetime.now() - t2
+    print(e2)
+
+    aaa = lch2rgb(aaa.type(torch.float64).numpy())
+    plt.imshow(aaa)
+    plt.show()
+    im_GT = lch2rgb(im_GT)
+    plt.imshow(im_GT)
+    plt.show()
+
     im_GT = soft_encode_image(im_GT)
+
     if type(im_GT) is torch.Tensor:
         return im_GT
     return torch.tensor(im_GT.astype(float))
@@ -91,7 +110,7 @@ def my_decoder_BW(key, data):
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()
-        img = img.convert("RGB")
+        # img = img.convert("RGB")
     value = np.asarray(img)
 
     im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
