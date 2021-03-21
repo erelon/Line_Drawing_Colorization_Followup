@@ -90,12 +90,12 @@ def my_decoder_GT(key, data):
     e2 = datetime.now() - t2
     print(e2)
 
-    aaa = lch2rgb(aaa.type(torch.float64).numpy())
-    plt.imshow(aaa)
-    plt.show()
-    im_GT = lch2rgb(im_GT)
-    plt.imshow(im_GT)
-    plt.show()
+    # aaa = lch2rgb(aaa.type(torch.float64).numpy())
+    # plt.imshow(aaa)
+    # plt.show()
+    # im_GT = lch2rgb(im_GT)
+    # plt.imshow(im_GT)
+    # plt.show()
 
     im_GT = soft_encode_image(im_GT)
 
