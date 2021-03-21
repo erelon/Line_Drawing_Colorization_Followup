@@ -168,8 +168,8 @@ def soft_encode_image(img):
 if torch.cuda.is_available():
     xyz_from_rgb = torch.from_numpy(np.array([[0.412453, 0.357580, 0.180423],
                                               [0.212671, 0.715160, 0.072169],
-                                              [0.019334, 0.119193, 0.950227]], dtype=torch.float16)).T.cuda()
-    xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=torch.float16)).cuda()
+                                              [0.019334, 0.119193, 0.950227]], dtype=np.float16)).T.cuda()
+    xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float16)).cuda()
 
 
 def rgb2lchTensor(rgb):
