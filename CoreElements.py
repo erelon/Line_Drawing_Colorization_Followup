@@ -62,7 +62,7 @@ def gaussianDist(pt1: torch.Tensor, pt2: torch.Tensor):
 
 def soft_encode_image_tensor(img, device):
     num_of_classes = 512
-    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes), device=device)
+    soft_encoding = torch.zeros((img.shape[1] ** 2, num_of_classes), device=device, dtype=torch.float16)
     img = img.type(torch.long)
     img_shape = img.shape[1]
 
