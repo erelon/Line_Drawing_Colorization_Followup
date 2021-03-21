@@ -123,7 +123,7 @@ def soft_encode_image_tensor(img, device):
 def soft_encode_image(img):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    if "tensor" not in str(type(img.type())).lower():
+    if "tensor" not in str(type(img)).lower():
         img = torch.from_numpy(img).to(device)
 
     return soft_encode_image_tensor(img, device)
