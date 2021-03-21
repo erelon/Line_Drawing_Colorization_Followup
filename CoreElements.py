@@ -173,7 +173,7 @@ def rgb2lchTensor(rgb):
     rgb /= 255.
     mask = rgb > 0.04045
     rgb[mask] = ((rgb[mask] + 0.055) / 1.055) ** 2.4
-
+    rgb = rgb.type(torch.float16)
     rgb[~mask] /= 12.92
 
     # scale by CIE XYZ tristimulus values of the reference white point

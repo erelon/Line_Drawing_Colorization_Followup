@@ -1,3 +1,4 @@
+import torchvision
 import webdataset as wds
 import torch
 from pytorch_lightning.profiler import AdvancedProfiler
@@ -12,6 +13,7 @@ from train_loop import train, back_to_color
 import pytorch_lightning as pl
 
 if __name__ == '__main__':
+    # torchvision.set_image_backend('accimage')
     try:
         import multiprocessing as mp
 
