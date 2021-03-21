@@ -93,6 +93,7 @@ def my_decoder_GT(key, data):
     # print("Tensor:" + str(e2))
 
     print("Normal " + str(e2 - e1)) if e1 < e2 else print("Tensor " + str(e1 - e2))
+    print(aaa.type())
 
     # aaa = lch2rgb(aaa.type(torch.float64).numpy())
     # plt.imshow(aaa)
