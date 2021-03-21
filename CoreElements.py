@@ -165,6 +165,7 @@ def soft_encode_image(img):
     # soft_encoding = soft_encoding.reshape((img.shape[1], img.shape[1], 512))
     # return soft_encoding
 
+
 if torch.cuda.is_available():
     xyz_from_rgb = torch.from_numpy(np.array([[0.412453, 0.357580, 0.180423],
                                               [0.212671, 0.715160, 0.072169],
@@ -173,11 +174,11 @@ if torch.cuda.is_available():
 
 
 def rgb2lchTensor(rgb):
+    rgb = rgb.type(torch.float16).cuda()
     rgb /= 255.
     mask = rgb > 0.04045
-    rgb[mask] = ((rgb[mask] + 0.055) / 1.055) ** 2.4
+    rgb[mask] = torch.pow(((rgb[mask] + 0.055) / 1.055), 2.4)
 
-    rgb = rgb.type(torch.float16).cuda()
 
     rgb[~mask] /= 12.92
 
@@ -187,7 +188,6 @@ def rgb2lchTensor(rgb):
     # Nonlinear distortion and linear transformation
     mask = rgb > 0.008856
     rgb[mask] = torch.pow(rgb[mask], 1 / 3)
-
 
     rgb[~mask] = 7.787 * rgb[~mask] + 16. / 116.
 
