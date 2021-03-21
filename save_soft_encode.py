@@ -26,6 +26,5 @@ if __name__ == '__main__':
         tar.close()
 
         shutil.rmtree("preprocessed_data/" + name[0][:name[0].find("/")], ignore_errors=True)
-        if i == 4:
-            break
+
     shutil.make_archive("preprocessed_data_tars", format="tar", root_dir="preprocessed_data_tars", base_dir=".")
