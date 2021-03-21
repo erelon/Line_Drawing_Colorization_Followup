@@ -197,15 +197,15 @@ def rgb2lchTensor(rgb):
     a = 500.0 * (x - y)
     b = 200.0 * (y - z)
 
-    lab = torch.cat([x[..., np.newaxis] for x in [L, a, b]], axis=-1)
+    rgb = torch.cat([x[..., np.newaxis] for x in [L, a, b]], axis=-1)
 
-    a, b = lab[..., 1], lab[..., 2]
+    a, b = rgb[..., 1], rgb[..., 2]
     a, b = torch.hypot(a, b), torch.atan2(b, a)
     b += torch.where(a < 0., 2 * np.pi, 0.)
 
-    lab[..., 1], lab[..., 2] = a, b
+    rgb[..., 1], rgb[..., 2] = a, b
 
-    return lab
+    return rgb
 
 
 def rgb2lch(rgb):
