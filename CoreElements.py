@@ -181,7 +181,8 @@ def rgb2lchTensor(rgb):
 
     # Nonlinear distortion and linear transformation
     mask = rgb > 0.008856
-    rgb[mask] = rgb[mask] ** (1 / 3)
+    rgb[mask] = torch.pow(rgb[mask], 1 / 3)
+
     rgb[~mask] = 7.787 * rgb[~mask] + 16. / 116.
 
     x, y, z = rgb[..., 0], rgb[..., 1], rgb[..., 2]
