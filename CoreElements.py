@@ -174,7 +174,6 @@ if torch.cuda.is_available():
 
 
 def rgb2lchTensor(rgb):
-    rgb = rgb.type(torch.float16).cuda()
     rgb /= 255.
     mask = rgb > 0.04045
     rgb[mask] = torch.pow(((rgb[mask] + 0.055) / 1.055), 2.4)
