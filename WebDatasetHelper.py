@@ -82,11 +82,13 @@ def my_decoder_GT(key, data):
 
     t1 = datetime.now()
     im_GT = rgb2lch(result)
+    im_GT = soft_encode_image(im_GT)
     e1 = datetime.now() - t1
     print("Normal:" + str(e1))
 
     t2 = datetime.now()
     aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)))
+    aaa = soft_encode_image(aaa)
     e2 = datetime.now() - t2
     print("Tensor:" + str(e2))
 
@@ -96,8 +98,6 @@ def my_decoder_GT(key, data):
     # im_GT = lch2rgb(im_GT)
     # plt.imshow(im_GT)
     # plt.show()
-
-    im_GT = soft_encode_image(im_GT)
 
     if type(im_GT) is torch.Tensor:
         return im_GT
