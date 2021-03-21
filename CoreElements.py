@@ -165,8 +165,8 @@ def soft_encode_image(img):
 
 xyz_from_rgb = torch.from_numpy(np.array([[0.412453, 0.357580, 0.180423],
                                           [0.212671, 0.715160, 0.072169],
-                                          [0.019334, 0.119193, 0.950227]], dtype=np.float32)).T.to(torch.device('cuda'))
-xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float32)).to(torch.device('cuda'))
+                                          [0.019334, 0.119193, 0.950227]], dtype=np.float32)).T
+xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float32))
 
 
 def rgb2lchTensor(rgb):
@@ -182,7 +182,7 @@ def rgb2lchTensor(rgb):
     # Nonlinear distortion and linear transformation
     mask = rgb > 0.008856
     rgb[mask] = torch.pow(rgb[mask], 1 / 3)
-    rgb = rgb.type(torch.float16)
+    rgb = rgb.type(torch.float16).cuda()
     rgb[~mask] = 7.787 * rgb[~mask] + 16. / 116.
 
     x, y, z = rgb[..., 0], rgb[..., 1], rgb[..., 2]
