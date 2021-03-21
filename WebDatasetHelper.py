@@ -80,28 +80,14 @@ def my_decoder_GT(key, data):
         # img = img.convert("RGB")
     result = np.asarray(img)
 
-    t1 = datetime.now()
-    im_GT = rgb2lch(result)
+    if torch.cuda.is_available():
+        im_GT = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)))
+    else:
+        im_GT = rgb2lch(result)
+
     im_GT = soft_encode_image(im_GT)
-    e1 = datetime.now() - t1
-    # print("Normal:" + str(e1))
 
-    t2 = datetime.now()
-    aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)))
-    print(aaa.type())
-    aaa = soft_encode_image(aaa)
-    e2 = datetime.now() - t2
-    # print("Tensor:" + str(e2))
-
-    print("Normal " + str(e2 - e1)) if e1 < e2 else print("Tensor " + str(e1 - e2))
-    print(aaa.type())
-
-    # aaa = lch2rgb(aaa.type(torch.float64).numpy())
-    # plt.imshow(aaa)
-    # plt.show()
-    # im_GT = lch2rgb(im_GT)
-    # plt.imshow(im_GT)
-    # plt.show()
+    back_to_color(im_GT.unsqeeze(0))
 
     if type(im_GT) is torch.Tensor:
         return im_GT
