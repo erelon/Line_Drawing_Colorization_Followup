@@ -86,7 +86,7 @@ def my_decoder_GT(key, data):
     print(e1)
 
     t2 = datetime.now()
-    aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float16)).to(torch.device('cuda')))
+    aaa = rgb2lchTensor(torch.from_numpy(result.astype(np.float32)).to(torch.device('cuda')))
     e2 = datetime.now() - t2
     print(e2)
 
