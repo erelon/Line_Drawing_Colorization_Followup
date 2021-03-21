@@ -1,5 +1,6 @@
+import bz2
 from datetime import datetime
-
+import tarfile
 import cv2
 import torch
 from torch.utils.data import IterableDataset
@@ -7,6 +8,7 @@ import random
 import webdataset as wds
 import matplotlib.pyplot as plt
 from torchvision import datasets
+from webdataset import Continue, tar_file_iterator, decode
 
 from CoreElements import rgb2lch, soft_encode_image, lch2rgb, rgb2lchTensor, back_to_color
 import pickle
@@ -104,3 +106,22 @@ def my_decoder_BW(key, data):
     # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
     im_BW = value.reshape((1, 256, 256))
     return torch.tensor(im_BW.astype("uint8"))
+
+
+def tarfilter(data):
+    data = tar_file_iterator(io.BytesIO(data["tar.bz2"]))
+    sss = dict()
+    for sample in data:
+        LL = wds.autodecode.Decoder([my_decoder_tensor, wds.autodecode.basichandlers])
+        a = LL.decode({sample[0]: sample[1]})
+        sss[sample[0][sample[0].find(".") + 1:]] = a.popitem()[1]
+
+    return sss
+
+
+def my_decoder_tensor(key, data):
+    if "pt" not in key:
+        return None
+    data = torch.load(io.BytesIO(data),
+                      map_location=torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+    return data.squeeze(0)

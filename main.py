@@ -5,11 +5,9 @@ from pytorch_lightning.profiler import AdvancedProfiler
 
 from torch.utils.data import TensorDataset
 
-from DataloaderHelper import collate
-from WebDatasetHelper import my_decoder_GT, my_decoder_BW, SampleEqually
+from WebDatasetHelper import my_decoder_GT, my_decoder_BW, SampleEqually, my_decoder_tensor, tarfilter
 from constant_matrix_creator import gatherClassImbalanceInfo, createClassMatrix
 from models import siggraph17_L
-from train_loop import train
 from CoreElements import back_to_color
 import pytorch_lightning as pl
 
@@ -37,8 +35,9 @@ if __name__ == '__main__':
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=True,
                              max_steps=150, distributed_backend='ddp', precision=16)
     else:
-        dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
-            .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(10)
+        dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
+            .map(tarfilter).to_tuple("gt.pt","train.pt","__key__").batched(2)
+
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=5)
     trainer.fit(model, dataloader)
