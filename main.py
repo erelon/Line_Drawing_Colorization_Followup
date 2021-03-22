@@ -23,7 +23,6 @@ if __name__ == '__main__':
 
     # for labels, train_data, name in dataloader:
     #     x = 5
-    # TODO:spit train and test
     # createClassMatrix()
     # gatherClassImbalanceInfo(dataloader)
     #
@@ -31,10 +30,12 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         # dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
         #     .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(6)
+
         dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
             .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
+
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
-        trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=True,
+        trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False,
                              max_steps=150, distributed_backend='ddp', precision=16)
     else:
         dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
