@@ -40,7 +40,7 @@ if __name__ == '__main__':
     model = siggraph17_L(pretrained_path=None)
     if torch.cuda.is_available():
         dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
-            .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(6)
+            .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
