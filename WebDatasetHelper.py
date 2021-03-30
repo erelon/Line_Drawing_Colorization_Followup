@@ -78,7 +78,7 @@ def my_decoder_GT(key, data):
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()
-        img = img.resize((128,128))
+        img = img.resize((128, 128))
 
     if torch.cuda.is_available():
         result = np.asarray(img, dtype=np.float16)
@@ -100,11 +100,12 @@ def my_decoder_BW(key, data):
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
         img.load()
-        img = img.resize((128,128))
+        img = img.resize((128, 128))
     value = np.asarray(img.convert("L"))
 
     # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
-    im_BW = value.reshape((1, 256, 256))
+    # im_BW = value.reshape((1, 256, 256))
+    im_BW = value.reshape((1, 128, 128))
     return torch.tensor(im_BW.astype("uint8"))
 
 
