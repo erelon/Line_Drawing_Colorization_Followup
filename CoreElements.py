@@ -37,7 +37,7 @@ def prob2img(probTensor: torch.Tensor):
                            H), dim=2)
 
     out_img = out_img.reshape(batch_sz, out_img_dim, out_img_dim, 3)
-    out_img = out_img.permute(0, 3, 1, 2)
+    # out_img = out_img.permute(0, 3, 1, 2)
     #
     # out_img = tf.reshape(tf.py_func(lch2rgb_batch, [out_img], Tout=tf.float32), shape=tf.shape(out_img))
     #

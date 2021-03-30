@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 from argparse import ArgumentParser, ArgumentTypeError
 import tarfile
@@ -6,13 +5,11 @@ import urllib
 from time import sleep
 
 import cv2
-import urllib3
+
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from posixpath import basename
-import webdataset as wds
 
-import threading
 import concurrent.futures
 
 from color_cleaner import clean_color
@@ -122,7 +119,7 @@ def scrape(base_url, folderName, to_tar, start_point, end_point, max_thread):
     for curr_img in reversed(range(end_point, start_point)):
         if os.path.isfile(os.path.join(folderName, '%d.jpg' % curr_img)):
             continue
-        if i % 10 == 0 and to_tar:
+        if i % 100 == 0 and to_tar:
             sleep(1)
             th = thread_pool.submit(tarify, folderName)
             th.result()

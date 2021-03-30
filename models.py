@@ -1,9 +1,11 @@
+from typing import Any, Optional
+
 import torch
 from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
-from CoreElements import back_to_color
+from CoreElements import back_to_color, prob2img
 
 
 class BaseColor(pl.LightningModule):
@@ -160,6 +162,15 @@ class SIGGRAPHGenerator(BaseColor):
                         reduction="mean")
         self.log('train_loss', loss)
         return loss
+
+    def predict(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None):
+        return prob2img(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
+
+    def online_predict(self, batch, batch_idx):
+        import matplotlib.pyplot as plt
+
+        for im in self.predict(batch, batch_idx).detach().numpy():
+            plt.imshow(im)
 
 
 def siggraph17_L(pretrained_path=None):

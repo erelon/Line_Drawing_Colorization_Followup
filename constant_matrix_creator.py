@@ -11,11 +11,14 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
     p = torch.zeros((Q))
 
     counter = 0
-    for i, (labels, _) in enumerate(dataloader):
-        # print(".", sep="")
-        p += labels.reshape((labels.shape[0], -1, 512)).argmax(axis=1).sum(axis=0)
+    for i, (labels, _,_) in enumerate(dataloader):
+        for label in labels:
+            # print(".", sep="")
+            p += label.reshape((-1, 512)).sum(axis=0)
         counter += labels.shape[0]
         print(f"Done {counter} images.")
+        if i == 10:
+            break
 
     tmpP = p / counter
     w = 1 / ((1 - lamb) * tmpP + lamb / Q)
@@ -23,7 +26,7 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
     w /= scale
 
     w = w.numpy()
-    np.save(outName, w.astype(np.float32))
+    np.save(outName, w.astype(np.float16))
 
 
 def createClassMatrix(outName="chroma_loss"):
