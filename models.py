@@ -35,7 +35,7 @@ class SIGGRAPHGenerator(BaseColor):
 
         # Conv1
         TEMP = 4
-        SIZE = int(256 / TEMP)
+        SIZE = int(128 / TEMP)
         model1 = [nn.Conv2d(1, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
         model1 += [nn.Conv2d(SIZE, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
@@ -155,11 +155,14 @@ class SIGGRAPHGenerator(BaseColor):
         optimizer = torch.optim.Adam(self.parameters())
         return optimizer
 
+    def CXE(self, predicted, target):
+        return -(target * torch.log(predicted)).sum(dim=1).mean()
+
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
         outputs_probs = self(input_batch)
-        loss = F.kl_div(F.log_softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]), log_target=True,
-                        reduction="mean")
+
+        loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
         self.log('train_loss', loss)
         return loss
 
