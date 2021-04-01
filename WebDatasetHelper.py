@@ -1,23 +1,11 @@
-import bz2
-from datetime import datetime
-import tarfile
-import cv2
 import torch
 from torch.utils.data import IterableDataset
 import random
 import webdataset as wds
-import matplotlib.pyplot as plt
-from torchvision import datasets
+
 from webdataset import Continue, tar_file_iterator, decode
-
 from CoreElements import rgb2lch, soft_encode_image, lch2rgb, rgb2lchTensor, back_to_color
-import pickle
-import re
-import os
-
 import numpy as np
-import json
-import tempfile
 import io
 import PIL.Image
 

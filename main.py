@@ -73,7 +73,7 @@ if __name__ == '__main__':
                                                                         handler=dummy_func).batched(4)
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(2)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=0)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=500, logger=neptune_logger)
 
     trainer.fit(model, dataloader)
