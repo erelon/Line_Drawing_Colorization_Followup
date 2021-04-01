@@ -26,6 +26,8 @@ def mask_gen(size=64):
 
     return mask
 
+def dummy_func(*args):
+    return True
 
 if __name__ == '__main__':
     try:
@@ -42,9 +44,6 @@ if __name__ == '__main__':
         api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiMDM3MjFkYy1jNTE3LTQ4NTAtOTFlNC00ZGY1NGM3Y2M4YmEifQ====",
         project_name="erelon39/Line-colorize")
 
-
-    def dummy_func(*args):
-        return True
 
 
     if torch.cuda.is_available():
