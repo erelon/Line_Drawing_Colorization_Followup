@@ -5,8 +5,9 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
-from CoreElements import back_to_color, prob2LCHimg
+from CoreElements import back_to_color, prob2LCHimg, prob2RGBimg
 from constant_matrix_creator import gatherLiveClassImbalanceInfo
+import matplotlib.pyplot as plt
 
 
 class BaseColor(pl.LightningModule):
@@ -174,11 +175,20 @@ class SIGGRAPHGenerator(BaseColor):
         outputs_probs = self(input_batch)
 
         loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
+
+        if batch_idx % 10000 == 0:
+            rgbs = prob2RGBimg(F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().permute([0, 2, 3, 1]))
+            gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0))
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            ax1.imshow(gt[0])
+            ax2.imshow(rgbs[0])
+            self.logger.experiment.log_image('sample', fig)
+            plt.close(fig)
         self.log('train_loss', loss)
         return loss
 
     def predict(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None):
-        return prob2LCHimg(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
+        return prob2RGBimg(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
 
     def online_predict(self, batch, batch_idx):
         import matplotlib.pyplot as plt

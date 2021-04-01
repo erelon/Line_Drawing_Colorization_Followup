@@ -1,20 +1,16 @@
-import cv2
-import torchvision
-import torchvision.utils as vutils
 import webdataset as wds
 import torch
-import numpy as np
-from pytorch_lightning.profiler import AdvancedProfiler
-import matplotlib.pyplot as plt
+
 from torch.utils.data import TensorDataset
 import scipy.stats as stats
 from WebDatasetHelper import my_decoder_GT_128, my_decoder_BW_128, SampleEqually, my_decoder_tensor, tarfilter, \
     my_decoder_GT_64, my_decoder_BW_64, my_decoder_GT_256, my_decoder_BW_256
-from constant_matrix_creator import gatherClassImbalanceInfo, createClassMatrix
+
 from models import siggraph17_L
-from CoreElements import back_to_color, prob2LCHimg, prob2RGBimg
 import pytorch_lightning as pl
 from GAN import NetI, NetG, NetD, NetF
+import os
+from pytorch_lightning.loggers.neptune import NeptuneLogger
 
 
 def mask_gen(size=64):
@@ -32,7 +28,6 @@ def mask_gen(size=64):
 
 
 if __name__ == '__main__':
-    # torchvision.set_image_backend('accimage')
     try:
         import multiprocessing as mp
 
@@ -40,10 +35,20 @@ if __name__ == '__main__':
         mp.set_start_method('spawn', force=True)
     except:
         pass
-    w = np.load("imbalance_vector.npy")
-    model = siggraph17_L(64, weights=torch.tensor(w), pretrained_path=None)
+
+    all_tars = []
+    for root, dirs, files in os.walk("."):
+        for file in files:
+            if file.endswith(".tar"):
+                all_tars.append(os.path.join(root, file))
+
+    neptune_logger = NeptuneLogger(
+        api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiMDM3MjFkYy1jNTE3LTQ4NTAtOTFlNC00ZGY1NGM3Y2M4YmEifQ==",
+        project_name="erelon39/Line-colorize")
+
+    model = siggraph17_L(64, pretrained_path=None)
     if torch.cuda.is_available():
-        dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
+        dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(my_decoder_GT_128).decode(my_decoder_BW_128).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
@@ -53,12 +58,12 @@ if __name__ == '__main__':
         trainer = pl.Trainer(gpus=1, log_every_n_steps=100, max_epochs=10, profiler=False,
                              distributed_backend='ddp', precision=16)
     else:
-        dataset = wds.WebDataset("train_{0000000..0000001}.tar", length=float("inf")) \
+        dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(2)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
-        trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=50)
+        trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=500, logger=neptune_logger)
 
     trainer.fit(model, dataloader)
     # netI = NetI()

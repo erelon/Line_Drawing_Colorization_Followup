@@ -1,0 +1,12 @@
+opencv-python
+urllib3
+bs4
+html5lib
+webdataset
+pytorch
+pytorch-lightning
+matplotlib
+numpy
+packaging
+neptune-client
+psutil
