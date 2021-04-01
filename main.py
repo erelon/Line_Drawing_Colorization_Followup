@@ -38,10 +38,13 @@ if __name__ == '__main__':
 
     all_tars = []
 
+    # neptune_logger = NeptuneLogger(
+    #     api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiMDM3MjFkYy1jNTE3LTQ4NTAtOTFlNC00ZGY1NGM3Y2M4YmEifQ==",
+    #     project_name="erelon39/Line-colorize")
 
-    neptune_logger = NeptuneLogger(
-        api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiMDM3MjFkYy1jNTE3LTQ4NTAtOTFlNC00ZGY1NGM3Y2M4YmEifQ==",
-        project_name="erelon39/Line-colorize")
+
+    def dummy_func(*args):
+        return True
 
 
     if torch.cuda.is_available():
@@ -51,7 +54,8 @@ if __name__ == '__main__':
                 if file.endswith(".tar"):
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
-            .decode(my_decoder_GT_128).decode(my_decoder_BW_128).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
+            .decode(my_decoder_GT_128).decode(my_decoder_BW_128).to_tuple("gt.jpg", "train.jpg", "__key__",
+                                                                          handler=dummy_func).batched(4)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
@@ -66,11 +70,12 @@ if __name__ == '__main__':
                 if file.endswith(".tar"):
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
-            .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__").batched(4)
+            .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__",
+                                                                        handler=dummy_func).batched(4)
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(2)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
-        trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=500, logger=neptune_logger)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=0)
+        trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=500)#, logger=neptune_logger)
 
     trainer.fit(model, dataloader)
     # netI = NetI()
