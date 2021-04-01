@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     if torch.cuda.is_available():
         model = siggraph17_L(128, pretrained_path=None)
-        for root, dirs, files in os.walk("~/sftp/erelon/df66f8bf-85ef-4dec-aa8f-464dd02ad15c"):
+        for root, dirs, files in os.walk("/home/erelon39/sftp/erelon/df66f8bf-85ef-4dec-aa8f-464dd02ad15c"):
             for file in files:
                 if file.endswith(".tar"):
                     all_tars.append(os.path.join(root, file))
