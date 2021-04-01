@@ -5,7 +5,8 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
-from CoreElements import back_to_color, prob2img
+from CoreElements import back_to_color, prob2LCHimg
+from constant_matrix_creator import gatherLiveClassImbalanceInfo
 
 
 class BaseColor(pl.LightningModule):
@@ -30,12 +31,18 @@ class BaseColor(pl.LightningModule):
 
 
 class SIGGRAPHGenerator(BaseColor):
-    def __init__(self, norm_layer=nn.BatchNorm2d, classes=512):
+    def __init__(self, im_size, norm_layer=nn.BatchNorm2d, classes=512, imbalance_weights=None):
         super(SIGGRAPHGenerator, self).__init__()
 
+        if imbalance_weights is None:
+            self.imbalance_weights = torch.ones(classes)
+        else:
+            self.imbalance_weights = imbalance_weights
+        self.classes = classes
+        self.size = im_size
         # Conv1
         TEMP = 4
-        SIZE = int(128 / TEMP)
+        SIZE = int(im_size / TEMP)
         model1 = [nn.Conv2d(1, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
         model1 += [nn.Conv2d(SIZE, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
@@ -156,7 +163,11 @@ class SIGGRAPHGenerator(BaseColor):
         return optimizer
 
     def CXE(self, predicted, target):
-        return -(target * torch.log(predicted)).sum(dim=1).mean()
+        # stacked_weights = self.imbalance_weights.repeat(target.shape[0], 1)
+        stacked_weights = gatherLiveClassImbalanceInfo(target).repeat(target.shape[0], 1)
+        weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
+            [-1, self.size, self.size])
+        return -(weight * (target * torch.log(predicted)).sum(dim=1)).mean()
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
@@ -167,7 +178,7 @@ class SIGGRAPHGenerator(BaseColor):
         return loss
 
     def predict(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None):
-        return prob2img(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
+        return prob2LCHimg(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
 
     def online_predict(self, batch, batch_idx):
         import matplotlib.pyplot as plt
@@ -176,8 +187,8 @@ class SIGGRAPHGenerator(BaseColor):
             plt.imshow(im)
 
 
-def siggraph17_L(pretrained_path=None):
-    model = SIGGRAPHGenerator()
+def siggraph17_L(im_size, pretrained_path=None, weights=None):
+    model = SIGGRAPHGenerator(im_size, imbalance_weights=weights)
     if (pretrained_path):
         model.load_state_dict(torch.load(pretrained_path, map_location=torch.device("cpu")))
         model.eval()

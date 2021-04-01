@@ -6,7 +6,15 @@ import torch
 from skimage import color
 
 
-def prob2img(probTensor: torch.Tensor):
+def prob2RGBimg(probTensor: torch.Tensor):
+    lchs = prob2LCHimg(probTensor)
+    rgbs = []
+    for lch in lchs:
+        rgbs.append(lch2rgb(lch.squeeze()))
+    return rgbs
+
+
+def prob2LCHimg(probTensor: torch.Tensor):
     num_of_classes = probTensor.shape[3]
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # converts probability distribtiuon to an image
@@ -15,7 +23,7 @@ def prob2img(probTensor: torch.Tensor):
     CLASS_MAP_B = torch.from_numpy(np.asarray([32 * int(i / 64) + 16 for i in range(num_of_classes)])).to(device)
 
     eps = 1e-4
-    out_img_dim = int(256)
+    out_img_dim = probTensor.shape[1]
 
     batch_sz = probTensor.shape[0]
     logits = torch.log(probTensor.reshape(batch_sz, out_img_dim ** 2, num_of_classes) + eps)
@@ -182,12 +190,12 @@ def lch2rgb(lch):
 def back_to_color(labels):
     import numpy as np
     import matplotlib.pyplot as plt
-    ims = prob2img(labels)
+    ims = prob2LCHimg(labels)
     for im in ims:
         im = im.detach().cpu().numpy()
 
-        final_img = np.moveaxis(im, [0], [-1])
+        # final_img = np.moveaxis(im, [0], [-1])
         # final_img = np.moveaxis(final_img, [1], [0])
-        final_im_rgb = lch2rgb(final_img.squeeze())
+        final_im_rgb = lch2rgb(im.squeeze())
         plt.imshow(final_im_rgb)
         plt.show()

@@ -8,10 +8,10 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
     lamb = 0.5
     Q = 512
 
-    p = torch.zeros((Q))
+    p = torch.zeros((Q), dtype=torch.float64)
 
     counter = 0
-    for i, (labels, _,_) in enumerate(dataloader):
+    for i, (labels, _, _) in enumerate(dataloader):
         for label in labels:
             # print(".", sep="")
             p += label.reshape((-1, 512)).sum(axis=0)
@@ -29,6 +29,24 @@ def gatherClassImbalanceInfo(dataloader, outName="imbalance_vector"):
     np.save(outName, w.astype(np.float16))
 
 
+def gatherLiveClassImbalanceInfo(labels_batch):
+    lamb = 0.5
+    Q = 512
+
+    p = torch.zeros((Q), dtype=torch.float64)
+
+    for label in labels_batch:
+        # print(".", sep="")
+        p += label.reshape((-1, 512)).sum(axis=0)
+
+    tmpP = p / labels_batch.shape[0]
+    w = 1 / ((1 - lamb) * tmpP + lamb / Q)
+    scale = (tmpP * w).sum()
+    w /= scale
+
+    return w
+
+
 def createClassMatrix(outName="chroma_loss"):
     labels = np.asarray([32 * int(i / 8) + 16 for i in range(64)] * 8)
     labels_len = len(labels)
@@ -40,5 +58,3 @@ def createClassMatrix(outName="chroma_loss"):
             if gt != labels[j]:
                 classMat[i, j] = 1
     np.save(outName, classMat.astype(np.float32))
-
-

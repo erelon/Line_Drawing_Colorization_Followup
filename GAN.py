@@ -36,7 +36,8 @@ class NetG(nn.Module):
     def __init__(self, ngf=64):
         super(NetG, self).__init__()
 
-        self.toH = nn.Sequential(nn.Conv2d(4, ngf // 2, kernel_size=7, stride=1, padding=3), nn.LeakyReLU(0.2, True))
+        self.toH = nn.Sequential(nn.Conv2d(4, ngf, kernel_size=7, stride=1, padding=3), nn.LeakyReLU(0.2, True))
+
         self.to0 = nn.Sequential(nn.Conv2d(1, ngf // 2, kernel_size=3, stride=1, padding=1),  # 512
                                  nn.LeakyReLU(0.2, True))
         self.to1 = nn.Sequential(nn.Conv2d(ngf // 2, ngf, kernel_size=4, stride=2, padding=1),  # 256
@@ -222,7 +223,7 @@ class NetI(nn.Module):
             nn.Conv2d(1024, 1539, (3, 3), (1, 1), (1, 1)),
             nn.AvgPool2d((7, 7), (1, 1), (0, 0), ceil_mode=True),  # AvgPool2d,
         )
-        # i2v_model.load_state_dict(torch.load(I2V_PATH))
+        i2v_model.load_state_dict(torch.load("i2v.pth"))
         i2v_model = nn.Sequential(
             *list(i2v_model.children())[:15]
         )
@@ -230,6 +231,6 @@ class NetI(nn.Module):
         self.register_buffer('mean', torch.FloatTensor([164.76139251, 167.47864617, 181.13838569]).view(1, 3, 1, 1))
 
     def forward(self, images):
-        # images = F.avg_pool2d(images, 2, 2)
-        # images = images.mul(0.5).add(0.5).mul(255)
-        return self.model(images.expand(-1, 3, 256, 256) - self.mean)
+        images = F.avg_pool2d(images, 2, 2)
+        images = images.mul(0.5).add(0.5).mul(255)
+        return self.model(images.expand(-1, 3, 128, 128) - self.mean)
