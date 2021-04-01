@@ -26,8 +26,10 @@ def mask_gen(size=64):
 
     return mask
 
+
 def dummy_func(*args):
     return True
+
 
 if __name__ == '__main__':
     try:
@@ -44,8 +46,6 @@ if __name__ == '__main__':
         api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiMDM3MjFkYy1jNTE3LTQ4NTAtOTFlNC00ZGY1NGM3Y2M4YmEifQ====",
         project_name="erelon39/Line-colorize")
 
-
-
     if torch.cuda.is_available():
         model = siggraph17_L(64, pretrained_path=None)
         for root, dirs, files in os.walk("/home/erelon39/sftp/erelon/df66f8bf-85ef-4dec-aa8f-464dd02ad15c"):
@@ -54,14 +54,14 @@ if __name__ == '__main__':
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__",
-                                                                          handler=dummy_func).batched(16)
+                                                                        handler=dummy_func).batched(16)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
 
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=0)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=1)
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False,
-                             distributed_backend='ddp', precision=16)
+                             distributed_backend='ddp', precision=16, logger=neptune_logger)
     else:
         model = siggraph17_L(64, pretrained_path=None)
         for root, dirs, files in os.walk("."):
