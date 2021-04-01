@@ -3,6 +3,7 @@ channels:
   - defaults
 dependencies:
   - blas=1.0=mkl
+  - python=3.7.9
   - intel-openmp=2020.2=254
   - mkl=2020.2=256
   - pyparsing=2.4.7=pyhd3eb1b0_0
@@ -13,7 +14,6 @@ dependencies:
     - tbb
     - six==1.15.0
     - setuptools==52.0.0
-    - python==3.7.9
     - metis==5.1.0
     - vs2015_runtime==14.27.29016
     - pip==21.0.1
