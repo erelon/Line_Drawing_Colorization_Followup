@@ -54,12 +54,12 @@ if __name__ == '__main__':
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__",
-                                                                          handler=dummy_func).batched(4)
+                                                                          handler=dummy_func).batched(8)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
 
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=4)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=3)
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False,
                              distributed_backend='ddp', precision=16)
     else:
