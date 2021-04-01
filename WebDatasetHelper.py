@@ -111,6 +111,7 @@ def my_decoder_BW_256(key, data):
 
 def my_decoder_GT_128(key, data):
     if "gt" not in key.lower():
+        print(key)
         return None
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)
@@ -133,6 +134,7 @@ def my_decoder_GT_128(key, data):
 
 def my_decoder_BW_128(key, data):
     if "train" not in key.lower():
+        print(key)
         return None
     with io.BytesIO(data) as stream:
         img = PIL.Image.open(stream)

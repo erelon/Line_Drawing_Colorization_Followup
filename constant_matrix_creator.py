@@ -33,7 +33,7 @@ def gatherLiveClassImbalanceInfo(labels_batch):
     lamb = 0.5
     Q = 512
 
-    p = torch.zeros((Q), dtype=torch.float64)
+    p = torch.zeros((Q), dtype=torch.float64,device=torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
 
     for label in labels_batch:
         # print(".", sep="")
