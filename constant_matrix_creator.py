@@ -39,10 +39,13 @@ def gatherLiveClassImbalanceInfo(labels_batch):
         # print(".", sep="")
         p += label.reshape((-1, 512)).sum(axis=0)
 
-    tmpP = p / labels_batch.shape[0]
-    w = 1 / ((1 - lamb) * tmpP + lamb / Q)
-    scale = (tmpP * w).sum()
+    p = p / labels_batch.shape[0]
+    w = 1 / ((1 - lamb) * p + lamb / Q)
+    scale = (p * w).sum()
     w /= scale
+
+    del p
+    del scale
 
     return w
 
