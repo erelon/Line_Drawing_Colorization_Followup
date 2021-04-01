@@ -54,7 +54,7 @@ if __name__ == '__main__':
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(my_decoder_GT_64).decode(my_decoder_BW_64).to_tuple("gt.jpg", "train.jpg", "__key__",
-                                                                        handler=dummy_func).batched(16)
+                                                                        handler=dummy_func).batched(32)
 
         # dataset = wds.WebDataset("preprocessed_data_tars.tar", length=float("inf")) \
         #     .map(tarfilter).to_tuple("gt.pt", "train.pt", "__key__").batched(4)
