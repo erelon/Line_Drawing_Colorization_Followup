@@ -3,8 +3,7 @@ import torch
 
 from torch.utils.data import TensorDataset
 import scipy.stats as stats
-from WebDatasetHelper import my_decoder_GT_128, my_decoder_BW_128, SampleEqually, my_decoder_tensor, tarfilter, \
-    my_decoder_GT_64, my_decoder_BW_64, my_decoder_GT_256, my_decoder_BW_256, my_decoders
+from WebDatasetHelper import my_decoders
 
 from models import siggraph17_L
 import pytorch_lightning as pl
