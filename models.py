@@ -180,7 +180,8 @@ class SIGGRAPHGenerator(BaseColor):
 
         if torch.cuda.is_available():
             if batch_idx % 500 == 0:
-                rgbs = prob2RGBimg(F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]))
+                rgbs = prob2RGBimg(
+                    F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]))
                 gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0).detach().cpu())
                 fig, (ax1, ax2) = plt.subplots(1, 2)
                 ax1.imshow(gt[0])
@@ -188,6 +189,8 @@ class SIGGRAPHGenerator(BaseColor):
                 self.logger.experiment.log_image('sample', fig)
                 plt.close(fig)
 
+        if torch.isnan(loss):
+            self.log("loss_error", loss)
 
         self.log('train_loss', loss)
         return loss
