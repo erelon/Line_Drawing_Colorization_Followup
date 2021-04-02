@@ -50,8 +50,9 @@ if __name__ == '__main__':
         model = siggraph17_L(128, pretrained_path=None)
         for root, dirs, files in os.walk("/home/erelon39/sftp/erelon/df66f8bf-85ef-4dec-aa8f-464dd02ad15c"):
             for file in files:
-                if file.endswith(".tar"):  # and "out" not in root and "out" not in file:
+                if file.endswith(".tar") and "out" not in root and "out" not in file:
                     all_tars.append(os.path.join(root, file))
+
 
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
