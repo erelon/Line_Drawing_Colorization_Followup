@@ -53,7 +53,7 @@ if __name__ == '__main__':
                 if file.endswith(".tar"):
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
-            .decode(decods.my_decoder_GT).decode(decods.my_decoder_GT).to_tuple("gt.jpg", "train.jpg", "__key__",
+            .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
                                                                                 handler=dummy_func).batched(32)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False,
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                 if file.endswith(".tar"):
                     all_tars.append(os.path.join(root, file))
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
-            .decode(decods.my_decoder_GT).decode(decods.my_decoder_GT).to_tuple("gt.jpg", "train.jpg", "__key__",
+            .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
                                                                                 handler=dummy_func).batched(4)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=4)
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, max_steps=500, logger=neptune_logger)
