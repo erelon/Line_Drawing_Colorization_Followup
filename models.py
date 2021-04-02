@@ -164,11 +164,13 @@ class SIGGRAPHGenerator(BaseColor):
         return optimizer
 
     def CXE(self, predicted, target):
-        # stacked_weights = self.imbalance_weights.repeat(target.shape[0], 1)
-        stacked_weights = gatherLiveClassImbalanceInfo(target).repeat(target.shape[0], 1)
-        weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
-            [-1, self.size, self.size])
-        return -(weight * (target * torch.log(predicted)).sum(dim=1)).mean()
+        # # stacked_weights = self.imbalance_weights.repeat(target.shape[0], 1)
+        # stacked_weights = gatherLiveClassImbalanceInfo(target).repeat(target.shape[0], 1)
+        # weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
+        #     [-1, self.size, self.size])
+        # return -(weight * (target * torch.log(predicted)).sum(dim=1)).mean()
+
+        return - (target * torch.log(predicted)).sum(dim=1).mean()
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
@@ -176,8 +178,8 @@ class SIGGRAPHGenerator(BaseColor):
 
         loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
 
-        try:
-            if batch_idx % 10000 == 0:
+        if torch.cuda.is_available():
+            if batch_idx % 500 == 0:
                 rgbs = prob2RGBimg(F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().permute([0, 2, 3, 1]))
                 gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0))
                 fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -185,8 +187,7 @@ class SIGGRAPHGenerator(BaseColor):
                 ax2.imshow(rgbs[0])
                 self.logger.experiment.log_image('sample', fig)
                 plt.close(fig)
-        except:
-            pass
+
         self.log('train_loss', loss)
         return loss
 
