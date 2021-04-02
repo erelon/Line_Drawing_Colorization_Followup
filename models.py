@@ -178,8 +178,9 @@ class SIGGRAPHGenerator(BaseColor):
 
         loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
 
-        if torch.cuda.is_available():
-            if batch_idx % 500 == 0:
+        if batch_idx % 500 == 0:
+            torch.save(self.state_dict(), f"model_e{self.current_epoch}_batch_{batch_idx}.pt")
+            if torch.cuda.is_available():
                 rgbs = prob2RGBimg(
                     F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]))
                 gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0).detach().cpu())
@@ -190,9 +191,9 @@ class SIGGRAPHGenerator(BaseColor):
                 plt.close(fig)
 
         if torch.isnan(loss):
-            self.log("loss_error", loss)
-
+            torch.save(self.state_dict(), f"model_loss_error.pt")
         self.log('train_loss', loss)
+
         return loss
 
     def predict(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None):
@@ -203,6 +204,9 @@ class SIGGRAPHGenerator(BaseColor):
 
         for im in self.predict(batch, batch_idx).detach().numpy():
             plt.imshow(im)
+
+    def validation_step(self):
+        pass
 
 
 def siggraph17_L(im_size, pretrained_path=None, weights=None):
