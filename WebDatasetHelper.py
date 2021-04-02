@@ -78,11 +78,13 @@ class my_decoders(object):
         # else:
         result = np.asarray(img)
         im_GT = rgb2lch(result)
-
         im_GT = soft_encode_image(im_GT)
 
         if type(im_GT) is torch.Tensor:
-            return im_GT
+            if torch.cuda.is_available():
+                return im_GT.cuda()
+            else:
+                return im_GT
         return torch.tensor(im_GT.astype(float))
 
     def my_decoder_BW(self, key, data):
@@ -97,7 +99,12 @@ class my_decoders(object):
         # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
         # im_BW = value.reshape((1, 256, 256))
         im_BW = value.reshape((1, self.size, self.size))
-        return torch.tensor(im_BW.astype("uint8"))
+
+        if torch.cuda.is_available():
+            return torch.tensor(im_BW.astype("uint8")).cuda()
+        else:
+            return torch.tensor(im_BW.astype("uint8"))
+
 
 
 def tarfilter(data):
