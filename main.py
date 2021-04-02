@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False, val_check_interval=500,
                              callbacks=[checkpoint_callback_sample, checkpoint_callback_loss_error],
-                             distributed_backend='ddp', precision=16, logger=neptune_logger)
+                             distributed_backend='ddp', logger=neptune_logger)
     else:
         decods = my_decoders(64)
         model = siggraph17_L(64, pretrained_path=None)
