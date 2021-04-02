@@ -58,7 +58,7 @@ if __name__ == '__main__':
                                                                                 handler=dummy_func).batched(16)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=4)
 
-        checkpoint_callback = pl.ModelCheckpoint(monitor='sample')
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='sample')
 
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False, val_check_interval=500,
                              callbacks=[checkpoint_callback],
