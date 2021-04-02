@@ -31,13 +31,13 @@ def dummy_func(*args):
 
 
 if __name__ == '__main__':
-    # try:
-    #     import multiprocessing as mp
-    #
-    #     __spec__ = None
-    #     mp.set_start_method('spawn', force=True)
-    # except:
-    #     pass
+    try:
+        import multiprocessing as mp
+
+        __spec__ = None
+        mp.set_start_method('spawn', force=True)
+    except:
+        pass
 
     all_tars = []
 
