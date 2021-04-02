@@ -160,7 +160,7 @@ class SIGGRAPHGenerator(BaseColor):
         return upsmapeld
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters())
+        optimizer = torch.optim.Adam(self.parameters(),lr=1e-4)
         return optimizer
 
     def CXE(self, predicted, target):
@@ -174,7 +174,7 @@ class SIGGRAPHGenerator(BaseColor):
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
-        outputs_probs = self(input_batch)
+        outputs_probs = self(input_batch/255)
 
         loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
 

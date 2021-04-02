@@ -61,8 +61,8 @@ if __name__ == '__main__':
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False, val_check_interval=500,
                              distributed_backend='ddp', logger=neptune_logger)
     else:
-        decods = my_decoders(64)
-        model = siggraph17_L(64, pretrained_path=None)
+        decods = my_decoders(128)
+        model = siggraph17_L(128, pretrained_path="model_e0_batch_500.pt")
         for root, dirs, files in os.walk("."):
             for file in files:
                 if file.endswith(".tar"):
@@ -70,8 +70,9 @@ if __name__ == '__main__':
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
                                                                                 handler=dummy_func).batched(4)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=0)
         trainer = pl.Trainer(log_every_n_steps=10, max_epochs=10, profiler=True, val_check_interval=2,
+
                              max_steps=500)  # , logger=neptune_logger)
 
     trainer.fit(model, dataloader)
