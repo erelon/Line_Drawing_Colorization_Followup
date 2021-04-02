@@ -180,8 +180,8 @@ class SIGGRAPHGenerator(BaseColor):
 
         if torch.cuda.is_available():
             if batch_idx % 500 == 0:
-                rgbs = prob2RGBimg(F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().permute([0, 2, 3, 1]))
-                gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0))
+                rgbs = prob2RGBimg(F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]))
+                gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0).detach().cpu())
                 fig, (ax1, ax2) = plt.subplots(1, 2)
                 ax1.imshow(gt[0])
                 ax2.imshow(rgbs[0])
