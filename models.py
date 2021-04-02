@@ -19,7 +19,8 @@ class BaseColor(pl.LightningModule):
         self.ab_norm = 110.
 
     def normalize_l(self, in_l):
-        return (in_l - self.l_cent) / self.l_norm
+        # return (in_l - self.l_cent) / self.l_norm
+        return in_l / 255
 
     def unnormalize_l(self, in_l):
         return in_l * self.l_norm + self.l_cent
@@ -160,7 +161,7 @@ class SIGGRAPHGenerator(BaseColor):
         return upsmapeld
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(),lr=1e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
         return optimizer
 
     def CXE(self, predicted, target):
@@ -174,7 +175,7 @@ class SIGGRAPHGenerator(BaseColor):
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
-        outputs_probs = self(input_batch/255)
+        outputs_probs = self(input_batch)
 
         loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
 
