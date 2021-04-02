@@ -85,7 +85,12 @@ class my_decoders(object):
                 return im_GT.cuda()
             else:
                 return im_GT
-        return torch.tensor(im_GT.astype(float))
+
+        if torch.cuda.is_available():
+            return torch.tensor(im_GT.astype(float)).cuda()
+        else:
+            return torch.tensor(im_GT.astype(float))
+
 
     def my_decoder_BW(self, key, data):
         if "train" not in key.lower():
