@@ -60,115 +60,44 @@ class SampleEqually(IterableDataset, c_Shorthands, wds.Composable):
                     return
 
 
-def my_decoder_GT_256(key, data):
-    if "gt" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((256, 256))
+class my_decoders(object):
+    def __init__(self, size=128):
+        self.size = size
 
-    if torch.cuda.is_available():
-        result = np.asarray(img, dtype=np.float16)
-        im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
-    else:
+    def my_decoder_GT(self, key, data):
+        if "gt" not in key.lower():
+            return None
+        with io.BytesIO(data) as stream:
+            img = PIL.Image.open(stream)
+            img.load()
+            img = img.resize((self.size, self.size))
+
+        # if torch.cuda.is_available():
+        #     result = np.asarray(img, dtype=np.float16)
+        #     im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
+        # else:
         result = np.asarray(img)
         im_GT = rgb2lch(result)
 
-    im_GT = soft_encode_image(im_GT)
+        im_GT = soft_encode_image(im_GT)
 
-    if type(im_GT) is torch.Tensor:
-        return im_GT
-    return torch.tensor(im_GT.astype(float))
+        if type(im_GT) is torch.Tensor:
+            return im_GT
+        return torch.tensor(im_GT.astype(float))
 
+    def my_decoder_BW(self, key, data):
+        if "train" not in key.lower():
+            return None
+        with io.BytesIO(data) as stream:
+            img = PIL.Image.open(stream)
+            img.load()
+            img = img.resize((self.size, self.size))
+        value = np.asarray(img.convert("L"))
 
-def my_decoder_BW_256(key, data):
-    if "train" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((256, 256))
-    value = np.asarray(img.convert("L"))
-
-    # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
-    # im_BW = value.reshape((1, 256, 256))
-    im_BW = value.reshape((1, 256, 256))
-    return torch.tensor(im_BW.astype("uint8"))
-
-
-def my_decoder_GT_128(key, data):
-    if "gt" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((128, 128))
-
-    if torch.cuda.is_available():
-        result = np.asarray(img, dtype=np.float16)
-        im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
-    else:
-        result = np.asarray(img)
-        im_GT = rgb2lch(result)
-
-    im_GT = soft_encode_image(im_GT)
-
-    if type(im_GT) is torch.Tensor:
-        return im_GT
-    return torch.tensor(im_GT.astype(float))
-
-
-def my_decoder_BW_128(key, data):
-    if "train" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((128, 128))
-    value = np.asarray(img.convert("L"))
-
-    # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
-    # im_BW = value.reshape((1, 256, 256))
-    im_BW = value.reshape((1, 128, 128))
-    return torch.tensor(im_BW.astype("uint8"))
-
-
-def my_decoder_GT_64(key, data):
-    if "gt" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((64, 64))
-
-    if torch.cuda.is_available():
-        result = np.asarray(img, dtype=np.float16)
-        im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
-    else:
-        result = np.asarray(img)
-        im_GT = rgb2lch(result)
-
-    im_GT = soft_encode_image(im_GT)
-
-    if type(im_GT) is torch.Tensor:
-        return im_GT
-    return torch.tensor(im_GT.astype(float))
-
-
-def my_decoder_BW_64(key, data):
-    if "train" not in key.lower():
-        return None
-    with io.BytesIO(data) as stream:
-        img = PIL.Image.open(stream)
-        img.load()
-        img = img.resize((64, 64))
-    value = np.asarray(img.convert("L"))
-
-    # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
-    # im_BW = value.reshape((1, 256, 256))
-    im_BW = value.reshape((1, 64, 64))
-    return torch.tensor(im_BW.astype("uint8"))
+        # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
+        # im_BW = value.reshape((1, 256, 256))
+        im_BW = value.reshape((1, 256, 256))
+        return torch.tensor(im_BW.astype("uint8"))
 
 
 def tarfilter(data):
