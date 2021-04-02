@@ -12,7 +12,7 @@ from WebDatasetHelper import my_decoder_GT, my_decoder_BW
 if __name__ == '__main__':
     dataset = wds.WebDataset("train_0000000.tar", length=float("inf")) \
         .decode(my_decoder_GT).decode(my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__").batched(1)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None,num_workers=2)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
     os.makedirs("preprocessed_data_tars", exist_ok=True)
 
     for i, (gt, bw, name) in enumerate(dataloader):
