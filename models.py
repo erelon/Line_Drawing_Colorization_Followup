@@ -188,6 +188,7 @@ class SIGGRAPHGenerator(BaseColor):
                 self.logger.experiment.log_image('sample', fig)
                 plt.close(fig)
 
+
         self.log('train_loss', loss)
         return loss
 

@@ -57,7 +57,11 @@ if __name__ == '__main__':
             .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
                                                                                 handler=dummy_func).batched(16)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=4)
+
+        checkpoint_callback = pl.ModelCheckpoint(monitor='sample')
+
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False, val_check_interval=500,
+                             callbacks=[checkpoint_callback],
                              distributed_backend='ddp', precision=16, logger=neptune_logger)
     else:
         decods = my_decoders(64)
