@@ -96,7 +96,7 @@ class my_decoders(object):
 
         # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
         # im_BW = value.reshape((1, 256, 256))
-        im_BW = value.reshape((1, 256, 256))
+        im_BW = value.reshape((1, self.size, self.size))
         return torch.tensor(im_BW.astype("uint8"))
 
 
