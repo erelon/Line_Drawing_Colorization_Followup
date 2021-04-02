@@ -55,8 +55,8 @@ if __name__ == '__main__':
 
         dataset = wds.WebDataset(all_tars, length=float("inf")) \
             .decode(decods.my_decoder_GT).decode(decods.my_decoder_BW).to_tuple("gt.jpg", "train.jpg", "__key__",
-                                                                                handler=dummy_func).batched(8)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=4)
+                                                                                handler=dummy_func).batched(2)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=None, num_workers=2)
         trainer = pl.Trainer(gpus=1, log_every_n_steps=10, max_epochs=10, profiler=False,
                              distributed_backend='ddp', precision=16, logger=neptune_logger)
     else:
