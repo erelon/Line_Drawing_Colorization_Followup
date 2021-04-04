@@ -63,7 +63,7 @@ if __name__ == '__main__':
                              distributed_backend='ddp', logger=neptune_logger)
     else:
         decods = my_decoders(128)
-        model = siggraph17_L(128, pretrained_path="model_e0_batch_4500.pt")
+        model = siggraph17_L(128, pretrained_path="model_e0_batch_4000.pt")
         for root, dirs, files in os.walk("."):
             for file in files:
                 if file.endswith(".tar"):

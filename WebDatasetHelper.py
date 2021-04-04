@@ -78,7 +78,8 @@ class my_decoders(object):
         else:
             result = np.asarray(img)
             im_GT = rgb2lch(result)
-            im_GT = soft_encode_image(im_GT)
+
+        im_GT = soft_encode_image(im_GT)
 
         if torch.isnan(im_GT).any():
             return None
