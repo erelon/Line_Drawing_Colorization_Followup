@@ -108,7 +108,7 @@ class my_decoders(object):
         # im_BW = value.reshape((1, 256, 256))
         im_BW = value.reshape((1, self.size, self.size))
 
-        if torch.isnan(im_BW).any():
+        if np.isnan(im_BW).any():
             return None
 
         if torch.cuda.is_available():
