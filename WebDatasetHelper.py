@@ -72,13 +72,16 @@ class my_decoders(object):
             img.load()
             img = img.resize((self.size, self.size))
 
-        # if torch.cuda.is_available():
-        #     result = np.asarray(img, dtype=np.float16)
-        #     im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
-        # else:
-        result = np.asarray(img)
-        im_GT = rgb2lch(result)
-        im_GT = soft_encode_image(im_GT)
+        if torch.cuda.is_available():
+            result = np.asarray(img, dtype=np.float16)
+            im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
+        else:
+            result = np.asarray(img)
+            im_GT = rgb2lch(result)
+            im_GT = soft_encode_image(im_GT)
+
+        if torch.isnan(im_GT).any():
+            return None
 
         if type(im_GT) is torch.Tensor:
             if torch.cuda.is_available():
@@ -104,6 +107,9 @@ class my_decoders(object):
         # im_BW = cv2.cvtColor(value, cv2.COLOR_RGB2GRAY)
         # im_BW = value.reshape((1, 256, 256))
         im_BW = value.reshape((1, self.size, self.size))
+
+        if torch.isnan(im_BW).any():
+            return None
 
         if torch.cuda.is_available():
             return torch.tensor(im_BW.astype("uint8")).cuda()

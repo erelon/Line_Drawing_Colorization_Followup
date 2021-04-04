@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     if torch.cuda.is_available():
         decods = my_decoders(128)
-        model = siggraph17_L(128, pretrained_path="model_e0_batch_1500.pt")
+        model = siggraph17_L(128, pretrained_path="model_e0_batch_4000.pt")
         for root, dirs, files in os.walk("/home/erelon39/sftp/erelon/df66f8bf-85ef-4dec-aa8f-464dd02ad15c"):
             for file in files:
                 if file.endswith(".tar") and "out" not in root and "out" not in file:
@@ -63,7 +63,7 @@ if __name__ == '__main__':
                              distributed_backend='ddp', logger=neptune_logger)
     else:
         decods = my_decoders(128)
-        model = siggraph17_L(128, pretrained_path="model_e0_batch_1500.pt")
+        model = siggraph17_L(128, pretrained_path="model_e0_batch_4500.pt")
         for root, dirs, files in os.walk("."):
             for file in files:
                 if file.endswith(".tar"):
