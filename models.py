@@ -36,6 +36,14 @@ class SIGGRAPHGenerator(BaseColor):
     def __init__(self, im_size, norm_layer=nn.BatchNorm2d, classes=512, imbalance_weights=None):
         super(SIGGRAPHGenerator, self).__init__()
 
+        # This is to keep softmax layer from numercly getting to 0
+        if torch.cuda.is_available():
+            self.epsilon = torch.tensor(5e-8, dtype=torch.float16, device=torch.device(
+                "cuda"))
+        else:
+            self.epsilon = torch.tensor(5e-8, dtype=torch.float32, device=torch.device(
+                "cpu"))
+
         if imbalance_weights is None:
             self.imbalance_weights = torch.ones(classes)
         else:
@@ -170,14 +178,16 @@ class SIGGRAPHGenerator(BaseColor):
         # weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
         #     [-1, self.size, self.size])
         # return -(weight * (target * torch.log(predicted)).sum(dim=1)).mean()
+        predicted = F.softmax(predicted, dim=1)
+        # predicted += self.epsilon
 
-        return - (target * torch.log(predicted)).sum(dim=1).mean()
+        return - (target * torch.log(predicted + self.epsilon)).sum(dim=1).mean()
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
         outputs_probs = self(input_batch)
 
-        loss = self.CXE(F.softmax(outputs_probs, dim=1), labels.permute([0, 3, 1, 2]))
+        loss = self.CXE(outputs_probs, labels.permute([0, 3, 1, 2]))
 
         if batch_idx % 500 == 0:
             torch.save(self.state_dict(), f"model_e{self.current_epoch}_batch_{batch_idx}.pt")
