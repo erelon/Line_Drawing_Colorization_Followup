@@ -64,7 +64,7 @@ class my_decoders(object):
     def __init__(self, size=128):
         self.size = size
 
-    def my_decoder_GT(self, key, data):
+    def simple_decoder(self, key, data):
         if "gt" not in key.lower():
             return None
         with io.BytesIO(data) as stream:
@@ -74,9 +74,19 @@ class my_decoders(object):
 
         if torch.cuda.is_available():
             result = np.asarray(img, dtype=np.float16)
+            im_GT = torch.from_numpy(result).cuda()
+        else:
+            im_GT = np.asarray(img)
+        return im_GT
+
+    def my_decoder_GT(self, key, data):
+        result = self.simple_decoder(key, data)
+        if result is None:
+            return None
+
+        if torch.cuda.is_available():
             im_GT = rgb2lchTensor(torch.from_numpy(result).cuda())
         else:
-            result = np.asarray(img)
             im_GT = rgb2lch(result)
 
         im_GT = soft_encode_image(im_GT)
@@ -94,7 +104,6 @@ class my_decoders(object):
             return torch.tensor(im_GT.astype(float)).cuda()
         else:
             return torch.tensor(im_GT.astype(float))
-
 
     def my_decoder_BW(self, key, data):
         if "train" not in key.lower():
@@ -116,7 +125,6 @@ class my_decoders(object):
             return torch.tensor(im_BW.astype("uint8")).cuda()
         else:
             return torch.tensor(im_BW.astype("uint8"))
-
 
 
 def tarfilter(data):

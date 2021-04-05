@@ -1,236 +1,285 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as M
-
-VGG16_PATH = 'resources/vgg16-397923af.pth'
-I2V_PATH = 'resources/i2v.pth'
+from pytorch_lightning import LightningModule
+import matplotlib.pyplot as plt
 
 
-class ResNeXtBottleneck(nn.Module):
-    def __init__(self, in_channels=256, out_channels=256, stride=1, cardinality=32, dilate=1):
-        super(ResNeXtBottleneck, self).__init__()
-        D = out_channels // 2
-        self.out_channels = out_channels
-        self.conv_reduce = nn.Conv2d(in_channels, D, kernel_size=1, stride=1, padding=0, bias=False)
-        self.conv_conv = nn.Conv2d(D, D, kernel_size=2 + stride, stride=stride, padding=dilate, dilation=dilate,
-                                   groups=cardinality,
-                                   bias=False)
-        self.conv_expand = nn.Conv2d(D, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
-        self.shortcut = nn.Sequential()
-        if stride != 1:
-            self.shortcut.add_module('shortcut',
-                                     nn.AvgPool2d(2, stride=2))
+def conv_block(in_dim, out_dim):
+    return nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, stride=1, padding=1),
+                         nn.ELU(True),
+                         nn.Conv2d(in_dim, in_dim, kernel_size=3, stride=1, padding=1),
+                         nn.ELU(True),
+                         nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1, padding=0),
+                         nn.AvgPool2d(kernel_size=2, stride=2))
+
+
+def deconv_block(in_dim, out_dim):
+    return nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=1, padding=1),
+                         nn.ELU(True),
+                         nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
+                         nn.ELU(True),
+                         nn.UpsamplingNearest2d(scale_factor=2))
+
+
+def blockUNet(in_c, out_c, name, transposed=False, bn=True, relu=True, dropout=False):
+    block = nn.Sequential()
+    if relu:
+        block.add_module('%s_relu' % name, nn.ReLU(inplace=True))
+    else:
+        block.add_module('%s_leakyrelu' % name, nn.LeakyReLU(0.2, inplace=True))
+    if not transposed:
+        block.add_module('%s_conv' % name, nn.Conv2d(in_c, out_c, 4, 2, 1, bias=False))
+    else:
+        block.add_module('%s_tconv' % name, nn.ConvTranspose2d(in_c, out_c, 4, 2, 1, bias=False))
+    if bn:
+        block.add_module('%s_bn' % name, nn.BatchNorm2d(out_c))
+    if dropout:
+        block.add_module('%s_dropout' % name, nn.Dropout2d(0.5, inplace=True))
+    return block
+
+
+class D(nn.Module):
+    def __init__(self, nc, ndf, hidden_size):
+        super(D, self).__init__()
+
+        # 256
+        self.conv1 = nn.Sequential(nn.Conv2d(nc, ndf, kernel_size=3, stride=1, padding=1),
+                                   nn.ELU(True))
+        # 256
+        self.conv2 = conv_block(ndf, ndf)
+        # 128
+        self.conv3 = conv_block(ndf, ndf * 2)
+        # 64
+        self.conv4 = conv_block(ndf * 2, ndf * 3)
+        # 32
+        self.encode = nn.Conv2d(ndf * 3, hidden_size, kernel_size=1, stride=1, padding=0)
+        self.decode = nn.Conv2d(hidden_size, ndf, kernel_size=1, stride=1, padding=0)
+        # 32
+        self.deconv4 = deconv_block(ndf, ndf)
+        # 64
+        self.deconv3 = deconv_block(ndf, ndf)
+        # 128
+        self.deconv2 = deconv_block(ndf, ndf)
+        # 256
+        self.deconv1 = nn.Sequential(nn.Conv2d(ndf, ndf, kernel_size=3, stride=1, padding=1),
+                                     nn.ELU(True),
+                                     nn.Conv2d(ndf, ndf, kernel_size=3, stride=1, padding=1),
+                                     nn.ELU(True),
+                                     nn.Conv2d(ndf, nc, kernel_size=3, stride=1, padding=1),
+                                     nn.Tanh())
+        """
+        self.deconv1 = nn.Sequential(nn.Conv2d(ndf,nc,kernel_size=3,stride=1,padding=1),
+                                     nn.Tanh())
+        """
 
     def forward(self, x):
-        bottleneck = self.conv_reduce.forward(x)
-        bottleneck = F.leaky_relu(bottleneck, 0.2, True)
-        bottleneck = self.conv_conv.forward(bottleneck)
-        bottleneck = F.leaky_relu(bottleneck, 0.2, True)
-        bottleneck = self.conv_expand.forward(bottleneck)
-        x = self.shortcut.forward(x)
-        return x + bottleneck
+        out1 = self.conv1(x)
+        out2 = self.conv2(out1)
+        out3 = self.conv3(out2)
+        out4 = self.conv4(out3)
+        out5 = self.encode(out4)
+        dout5 = self.decode(out5)
+        dout4 = self.deconv4(dout5)
+        dout3 = self.deconv3(dout4)
+        dout2 = self.deconv2(dout3)
+        dout1 = self.deconv1(dout2)
+        return dout1
 
 
-class NetG(nn.Module):
-    def __init__(self, ngf=64):
-        super(NetG, self).__init__()
+class G(nn.Module):
+    def __init__(self, input_nc, output_nc, nf):
+        super(G, self).__init__()
 
-        self.toH = nn.Sequential(nn.Conv2d(4, ngf, kernel_size=7, stride=1, padding=3), nn.LeakyReLU(0.2, True))
+        # input is 256 x 256
+        layer_idx = 1
+        name = 'layer%d' % layer_idx
+        layer1 = nn.Sequential()
+        layer1.add_module(name, nn.Conv2d(input_nc, nf, 4, 2, 1, bias=False))
+        # input is 128 x 128
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer2 = blockUNet(nf, nf * 2, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 64 x 64
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer3 = blockUNet(nf * 2, nf * 4, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 32
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer4 = blockUNet(nf * 4, nf * 8, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 16
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer5 = blockUNet(nf * 8, nf * 8, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 8
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer6 = blockUNet(nf * 8, nf * 8, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 4
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer7 = blockUNet(nf * 8, nf * 8, name, transposed=False, bn=True, relu=False, dropout=False)
+        # input is 2 x  2
+        layer_idx += 1
+        name = 'layer%d' % layer_idx
+        layer8 = blockUNet(nf * 8, nf * 8, name, transposed=False, bn=False, relu=False, dropout=False)
 
-        self.to0 = nn.Sequential(nn.Conv2d(1, ngf // 2, kernel_size=3, stride=1, padding=1),  # 512
-                                 nn.LeakyReLU(0.2, True))
-        self.to1 = nn.Sequential(nn.Conv2d(ngf // 2, ngf, kernel_size=4, stride=2, padding=1),  # 256
-                                 nn.LeakyReLU(0.2, True))
-        self.to2 = nn.Sequential(nn.Conv2d(ngf, ngf * 2, kernel_size=4, stride=2, padding=1),  # 128
-                                 nn.LeakyReLU(0.2, True))
-        self.to3 = nn.Sequential(nn.Conv2d(ngf * 3, ngf * 4, kernel_size=4, stride=2, padding=1),  # 64
-                                 nn.LeakyReLU(0.2, True))
-        self.to4 = nn.Sequential(nn.Conv2d(ngf * 4, ngf * 8, kernel_size=4, stride=2, padding=1),  # 32
-                                 nn.LeakyReLU(0.2, True))
+        ## NOTE: decoder
+        # input is 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 8
+        dlayer8 = blockUNet(d_inc, nf * 8, name, transposed=True, bn=True, relu=True, dropout=True)
 
-        tunnel4 = nn.Sequential(*[ResNeXtBottleneck(ngf * 8, ngf * 8, cardinality=32, dilate=1) for _ in range(20)])
+        # import pdb; pdb.set_trace()
+        # input is 2
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 8 * 2
+        dlayer7 = blockUNet(d_inc, nf * 8, name, transposed=True, bn=True, relu=True, dropout=True)
+        # input is 4
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 8 * 2
+        dlayer6 = blockUNet(d_inc, nf * 8, name, transposed=True, bn=True, relu=True, dropout=True)
+        # input is 8
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 8 * 2
+        dlayer5 = blockUNet(d_inc, nf * 8, name, transposed=True, bn=True, relu=True, dropout=False)
+        # input is 16
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 8 * 2
+        dlayer4 = blockUNet(d_inc, nf * 4, name, transposed=True, bn=True, relu=True, dropout=False)
+        # input is 32
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 4 * 2
+        dlayer3 = blockUNet(d_inc, nf * 2, name, transposed=True, bn=True, relu=True, dropout=False)
+        # input is 64
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        d_inc = nf * 2 * 2
+        dlayer2 = blockUNet(d_inc, nf, name, transposed=True, bn=True, relu=True, dropout=False)
+        # input is 128
+        layer_idx -= 1
+        name = 'dlayer%d' % layer_idx
+        dlayer1 = nn.Sequential()
+        d_inc = nf * 2
+        dlayer1.add_module('%s_relu' % name, nn.ReLU(inplace=True))
+        dlayer1.add_module('%s_tconv' % name, nn.ConvTranspose2d(d_inc, output_nc, 4, 2, 1, bias=False))
+        dlayer1.add_module('%s_tanh' % name, nn.Tanh())
 
-        self.tunnel4 = nn.Sequential(nn.Conv2d(ngf * 8 + 512, ngf * 8, kernel_size=3, stride=1, padding=1),
-                                     nn.LeakyReLU(0.2, True),
-                                     tunnel4,
-                                     nn.Conv2d(ngf * 8, ngf * 4 * 4, kernel_size=3, stride=1, padding=1),
-                                     nn.PixelShuffle(2),
-                                     nn.LeakyReLU(0.2, True)
-                                     )  # 64
+        self.layer1 = layer1
+        self.layer2 = layer2
+        self.layer3 = layer3
+        self.layer4 = layer4
+        self.layer5 = layer5
+        self.layer6 = layer6
+        self.layer7 = layer7
+        self.layer8 = layer8
+        self.dlayer8 = dlayer8
+        self.dlayer7 = dlayer7
+        self.dlayer6 = dlayer6
+        self.dlayer5 = dlayer5
+        self.dlayer4 = dlayer4
+        self.dlayer3 = dlayer3
+        self.dlayer2 = dlayer2
+        self.dlayer1 = dlayer1
 
-        depth = 2
-        tunnel = [ResNeXtBottleneck(ngf * 4, ngf * 4, cardinality=32, dilate=1) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 4, ngf * 4, cardinality=32, dilate=2) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 4, ngf * 4, cardinality=32, dilate=4) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 4, ngf * 4, cardinality=32, dilate=2),
-                   ResNeXtBottleneck(ngf * 4, ngf * 4, cardinality=32, dilate=1)]
-        tunnel3 = nn.Sequential(*tunnel)
-
-        self.tunnel3 = nn.Sequential(nn.Conv2d(ngf * 8, ngf * 4, kernel_size=3, stride=1, padding=1),
-                                     nn.LeakyReLU(0.2, True),
-                                     tunnel3,
-                                     nn.Conv2d(ngf * 4, ngf * 2 * 4, kernel_size=3, stride=1, padding=1),
-                                     nn.PixelShuffle(2),
-                                     nn.LeakyReLU(0.2, True)
-                                     )  # 128
-
-        tunnel = [ResNeXtBottleneck(ngf * 2, ngf * 2, cardinality=32, dilate=1) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 2, ngf * 2, cardinality=32, dilate=2) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 2, ngf * 2, cardinality=32, dilate=4) for _ in range(depth)]
-        tunnel += [ResNeXtBottleneck(ngf * 2, ngf * 2, cardinality=32, dilate=2),
-                   ResNeXtBottleneck(ngf * 2, ngf * 2, cardinality=32, dilate=1)]
-        tunnel2 = nn.Sequential(*tunnel)
-
-        self.tunnel2 = nn.Sequential(nn.Conv2d(ngf * 4, ngf * 2, kernel_size=3, stride=1, padding=1),
-                                     nn.LeakyReLU(0.2, True),
-                                     tunnel2,
-                                     nn.Conv2d(ngf * 2, ngf * 4, kernel_size=3, stride=1, padding=1),
-                                     nn.PixelShuffle(2),
-                                     nn.LeakyReLU(0.2, True)
-                                     )
-
-        tunnel = [ResNeXtBottleneck(ngf, ngf, cardinality=16, dilate=1)]
-        tunnel += [ResNeXtBottleneck(ngf, ngf, cardinality=16, dilate=2)]
-        tunnel += [ResNeXtBottleneck(ngf, ngf, cardinality=16, dilate=4)]
-        tunnel += [ResNeXtBottleneck(ngf, ngf, cardinality=16, dilate=2),
-                   ResNeXtBottleneck(ngf, ngf, cardinality=16, dilate=1)]
-        tunnel1 = nn.Sequential(*tunnel)
-
-        self.tunnel1 = nn.Sequential(nn.Conv2d(ngf * 2, ngf, kernel_size=3, stride=1, padding=1),
-                                     nn.LeakyReLU(0.2, True),
-                                     tunnel1,
-                                     nn.Conv2d(ngf, ngf * 2, kernel_size=3, stride=1, padding=1),
-                                     nn.PixelShuffle(2),
-                                     nn.LeakyReLU(0.2, True)
-                                     )
-
-        self.exit = nn.Conv2d(ngf, 3, kernel_size=3, stride=1, padding=1)
-
-    def forward(self, sketch, hint, sketch_feat):
-        hint = self.toH(hint)
-
-        x0 = self.to0(sketch)
-        x1 = self.to1(x0)
-        x2 = self.to2(x1)
-        x3 = self.to3(torch.cat([x2, hint], 1))  # !
-        x4 = self.to4(x3)
-
-        x = self.tunnel4(torch.cat([x4, sketch_feat], 1))
-        x = self.tunnel3(torch.cat([x, x3], 1))
-        x = self.tunnel2(torch.cat([x, x2], 1))
-        x = self.tunnel1(torch.cat([x, x1], 1))
-        x = F.tanh(self.exit(torch.cat([x, x0], 1)))
-
-        return x
-
-
-class NetD(nn.Module):
-    def __init__(self, ndf=64):
-        super(NetD, self).__init__()
-
-        self.feed = nn.Sequential(nn.Conv2d(3, ndf, kernel_size=7, stride=1, padding=3, bias=False),  # 512
-                                  nn.LeakyReLU(0.2, True),
-                                  nn.Conv2d(ndf, ndf, kernel_size=4, stride=2, padding=1, bias=False),  # 256
-                                  nn.LeakyReLU(0.2, True),
-
-                                  ResNeXtBottleneck(ndf, ndf, cardinality=8, dilate=1),
-                                  ResNeXtBottleneck(ndf, ndf, cardinality=8, dilate=1, stride=2),  # 128
-                                  nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=False),
-                                  nn.LeakyReLU(0.2, True),
-
-                                  ResNeXtBottleneck(ndf * 2, ndf * 2, cardinality=8, dilate=1),
-                                  ResNeXtBottleneck(ndf * 2, ndf * 2, cardinality=8, dilate=1, stride=2),  # 64
-                                  nn.Conv2d(ndf * 2, ndf * 4, kernel_size=1, stride=1, padding=0, bias=False),
-                                  nn.LeakyReLU(0.2, True),
-
-                                  ResNeXtBottleneck(ndf * 4, ndf * 4, cardinality=8, dilate=1),
-                                  ResNeXtBottleneck(ndf * 4, ndf * 4, cardinality=8, dilate=1, stride=2)  # 32
-                                  )
-
-        self.feed2 = nn.Sequential(nn.Conv2d(ndf * 12, ndf * 8, kernel_size=3, stride=1, padding=1, bias=False),  # 32
-                                   nn.LeakyReLU(0.2, True),
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1),
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1, stride=2),  # 16
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1),
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1, stride=2),  # 8
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1),
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1, stride=2),  # 4
-                                   ResNeXtBottleneck(ndf * 8, ndf * 8, cardinality=8, dilate=1),
-                                   nn.Conv2d(ndf * 8, ndf * 8, kernel_size=4, stride=1, padding=0, bias=False),  # 1
-                                   nn.LeakyReLU(0.2, True)
-                                   )
-
-        self.out = nn.Linear(512, 1)
-
-    def forward(self, color, sketch_feat):
-        x = self.feed(color)
-
-        x = self.feed2(torch.cat([x, sketch_feat], 1))
-
-        out = self.out(x.view(color.size(0), -1))
-        return out
+    def forward(self, x):
+        out1 = self.layer1(x)
+        out2 = self.layer2(out1)
+        out3 = self.layer3(out2)
+        out4 = self.layer4(out3)
+        out5 = self.layer5(out4)
+        # out6 = self.layer6(out5)
+        # out7 = self.layer7(out6)
+        out8 = self.layer8(out5)
+        dout8 = self.dlayer8(out8)
+        # dout8_out7 = torch.cat([dout8, out7], 1)
+        # dout7 = self.dlayer7(dout8_out7)
+        # dout7_out6 = torch.cat([dout8, out6], 1)
+        # dout6 = self.dlayer6(dout7_out6)
+        dout6_out5 = torch.cat([dout8, out5], 1)
+        dout5 = self.dlayer5(dout6_out5)
+        dout5_out4 = torch.cat([dout5, out4], 1)
+        dout4 = self.dlayer4(dout5_out4)
+        dout4_out3 = torch.cat([dout4, out3], 1)
+        dout3 = self.dlayer3(dout4_out3)
+        dout3_out2 = torch.cat([dout3, out2], 1)
+        dout2 = self.dlayer2(dout3_out2)
+        dout2_out1 = torch.cat([dout2, out1], 1)
+        dout1 = self.dlayer1(dout2_out1)
+        return dout1
 
 
-class NetF(nn.Module):
+class GAN(LightningModule):
     def __init__(self):
-        super(NetF, self).__init__()
-        vgg16 = M.vgg16()
-        # vgg16.load_state_dict(torch.load(VGG16_PATH))
-        vgg16.features = nn.Sequential(
-            *list(vgg16.features.children())[:9]
-        )
-        self.model = vgg16.features
-        self.register_buffer('mean', torch.FloatTensor([0.485 - 0.5, 0.456 - 0.5, 0.406 - 0.5]).view(1, 3, 1, 1))
-        self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1))
+        super().__init__()
 
-    def forward(self, images):
-        return self.model((images.mul(0.5) - self.mean) / self.std)
+        # networks
+        self.generator = G(3, 3, 32)
+        self.discriminator = D(3, 3, 32)
 
+        self.criterionCAE = nn.L1Loss()
+        self.k = 0
 
-class NetI(nn.Module):
-    def __init__(self):
-        super(NetI, self).__init__()
-        i2v_model = nn.Sequential(  # Sequential,
-            nn.Conv2d(3, 64, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True),
-            nn.Conv2d(64, 128, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True),
-            nn.Conv2d(128, 256, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Conv2d(256, 256, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True),
-            nn.Conv2d(256, 512, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True),
-            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True),
-            nn.Conv2d(512, 1024, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, (3, 3), (1, 1), (1, 1)),
-            nn.ReLU(True),
-            nn.Dropout(0.5),
-            nn.Conv2d(1024, 1539, (3, 3), (1, 1), (1, 1)),
-            nn.AvgPool2d((7, 7), (1, 1), (0, 0), ceil_mode=True),  # AvgPool2d,
-        )
-        i2v_model.load_state_dict(torch.load("i2v.pth"))
-        i2v_model = nn.Sequential(
-            *list(i2v_model.children())[:15]
-        )
-        self.model = i2v_model
-        self.register_buffer('mean', torch.FloatTensor([164.76139251, 167.47864617, 181.13838569]).view(1, 3, 1, 1))
+    def forward(self, z):
+        return self.generator(z)
 
-    def forward(self, images):
-        images = F.avg_pool2d(images, 2, 2)
-        images = images.mul(0.5).add(0.5).mul(255)
-        return self.model(images.expand(-1, 3, 128, 128) - self.mean)
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        labels, input_batch, name = batch
+        input_batch = input_batch.permute(0, 3, 1, 2) / 255
+        labels = labels.permute(0, 3, 1, 2) / 255
+        # train generator
+        if optimizer_idx == 0:
+            # generate images
+            self.generated_imgs = self(input_batch)
+            g_loss = self.criterionCAE(self.generated_imgs, labels) * .1
+
+            recon_fake = self.discriminator(self.generated_imgs)
+            errG = torch.mean(torch.abs(recon_fake - self.generated_imgs))
+            self.log("Generator L1 loss", g_loss)
+            self.log("Generator error loss", errG)
+            self.log("Generator total loss", g_loss + errG)
+
+            return g_loss + errG
+
+        # train discriminator
+        if optimizer_idx == 1:
+            # Measure discriminator's ability to classify real from generated samples
+
+            recon_real = self.discriminator(labels)
+            fake = self.generated_imgs.detach()
+            recon_fake = self.discriminator(fake)
+            # compute L(x)
+            errD_real = torch.mean(torch.abs(recon_real - labels))
+            # compute L(G(z_D))
+            errD_fake = torch.mean(torch.abs(recon_fake - fake))
+            # compute L_D
+            errD = errD_real - self.k * errD_fake
+
+            balance = (0.7 * errD_real - errD_fake).data
+            self.k = min(max(self.k + 0.001 * balance, 0), 1)
+            self.log("Discriminator loss", errD)
+
+            if batch_idx % 500 == 0:
+                fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+                ax1.imshow(input_batch.permute(0, 2, 3, 1)[0])
+                ax2.imshow(self.generated_imgs.permute(0, 2, 3, 1)[0].detach())
+                ax3.imshow(labels.permute(0, 2, 3, 1)[0])
+                self.logger.experiment.log_image('sample', fig)
+                plt.close(fig)
+                if batch_idx % 500 == 0:
+                    torch.save(self.generator.state_dict(), f"Gan/gan_gen_e{self.current_epoch}_batch_{batch_idx}.pt")
+                    torch.save(self.discriminator.state_dict(),
+                               f"Gan/gan_dis_e{self.current_epoch}_batch_{batch_idx}.pt")
+
+            return errD
+
+    def configure_optimizers(self):
+        opt_g = torch.optim.Adam(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999), weight_decay=0.0)
+        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999), weight_decay=0.0)
+        return [opt_g, opt_d], []
