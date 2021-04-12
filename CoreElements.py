@@ -6,17 +6,17 @@ import torch
 from skimage import color
 
 
-def prob2RGBimg(probTensor: torch.Tensor):
-    lchs = prob2LCHimg(probTensor)
+def prob2RGBimg(probTensor: torch.Tensor, device):
+    lchs = prob2LCHimg(probTensor, device)
     rgbs = []
     for lch in lchs:
         rgbs.append(lch2rgb(lch.squeeze().detach().cpu()))
     return rgbs
 
 
-def prob2LCHimg(probTensor: torch.Tensor):
+def prob2LCHimg(probTensor: torch.Tensor, device):
     num_of_classes = probTensor.shape[3]
-    device = torch.device('cpu')  # torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # converts probability distribtiuon to an image
     CLASS_MAP_R = torch.from_numpy(np.asarray([32 * i + 16 for i in range(8)] * 64)).to(device)
     CLASS_MAP_G = torch.from_numpy(np.asarray([32 * int(i / 8) + 16 for i in range(64)] * 8)).to(device)
@@ -28,9 +28,9 @@ def prob2LCHimg(probTensor: torch.Tensor):
     batch_sz = probTensor.shape[0]
     logits = torch.log(probTensor.reshape(batch_sz, out_img_dim ** 2, num_of_classes) + eps)
 
-    logits_sub = (logits - logits.max(dim=2, keepdim=True).values) / 0.8
+    logits_sub = (logits - logits.max(dim=2, keepdim=True).values)
 
-    unnormalized = torch.exp(logits_sub)
+    unnormalized = torch.exp(logits_sub) / 0.8
 
     probabilities = unnormalized / unnormalized.sum(dim=2, keepdim=True)
 
@@ -38,7 +38,7 @@ def prob2LCHimg(probTensor: torch.Tensor):
     # treat H differently because it is a circular value (ref: https://en.wikipedia.org/wiki/Mean_of_circular_quantities)
     hAngles = CLASS_MAP_B * (2 * np.pi) / 255.0
 
-    H = torch.atan2((hAngles.cos() * probabilities).sum(dim=2), (hAngles.cos() * probabilities).sum(dim=2))
+    H = torch.atan2((hAngles.cos() * probabilities).sum(dim=2), (hAngles.sin() * probabilities).sum(dim=2))
 
     out_img = torch.stack(((CLASS_MAP_R * probabilities).sum(dim=2) * 100 / 255.0,
                            (CLASS_MAP_G * probabilities).sum(dim=2) * 100 / 255.0,
@@ -128,8 +128,8 @@ def soft_encode_image_tensor(img, device):
     return soft_encoding
 
 
-def soft_encode_image(img):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+def soft_encode_image(img, device):
+    # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # device = torch.device('cpu')
 
     if "tensor" not in str(type(img)).lower():
@@ -143,6 +143,11 @@ if torch.cuda.is_available():
                                               [0.212671, 0.715160, 0.072169],
                                               [0.019334, 0.119193, 0.950227]], dtype=np.float16)).T.cuda()
     xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float16)).cuda()
+else:
+    xyz_from_rgb = torch.from_numpy(np.array([[0.412453, 0.357580, 0.180423],
+                                              [0.212671, 0.715160, 0.072169],
+                                              [0.019334, 0.119193, 0.950227]], dtype=np.float32)).T
+    xyz_ref_white = torch.from_numpy(np.array([0.9507, 1., 1.089], dtype=np.float32))
 
 
 def rgb2lchTensor(rgb):
@@ -175,6 +180,8 @@ def rgb2lchTensor(rgb):
 
     rgb[..., 1], rgb[..., 2] = a, b
 
+    rgb[rgb < 0] = 0
+
     return rgb
 
 
@@ -192,7 +199,7 @@ def back_to_color(labels, show=True):
     import matplotlib.pyplot as plt
     if not torch.cuda.is_available():
         labels = labels.type(torch.float32)
-    ims = prob2LCHimg(labels)
+    ims = prob2LCHimg(labels, device=torch.device("cpu"))
     all_ims = []
     for im in ims:
         im = im.detach().cpu().numpy()

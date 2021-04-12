@@ -1,8 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from matplotlib.lines import Line2D
 from pytorch_lightning import LightningModule
 import matplotlib.pyplot as plt
+from torch.autograd import Variable
+import numpy as np
 
 
 def conv_block(in_dim, out_dim):
@@ -74,17 +77,17 @@ class D(nn.Module):
         """
 
     def forward(self, x):
-        out1 = self.conv1(x)
-        out2 = self.conv2(out1)
-        out3 = self.conv3(out2)
-        out4 = self.conv4(out3)
-        out5 = self.encode(out4)
-        dout5 = self.decode(out5)
-        dout4 = self.deconv4(dout5)
-        dout3 = self.deconv3(dout4)
-        dout2 = self.deconv2(dout3)
-        dout1 = self.deconv1(dout2)
-        return dout1
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.encode(x)
+        x = self.decode(x)
+        x = self.deconv4(x)
+        x = self.deconv3(x)
+        x = self.deconv2(x)
+        x = self.deconv1(x)
+        return x
 
 
 class G(nn.Module):
@@ -196,23 +199,23 @@ class G(nn.Module):
         out5 = self.layer5(out4)
         # out6 = self.layer6(out5)
         # out7 = self.layer7(out6)
-        out8 = self.layer8(out5)
-        dout8 = self.dlayer8(out8)
+        x = self.layer8(out5)
+        x = self.dlayer8(x)
         # dout8_out7 = torch.cat([dout8, out7], 1)
         # dout7 = self.dlayer7(dout8_out7)
         # dout7_out6 = torch.cat([dout8, out6], 1)
         # dout6 = self.dlayer6(dout7_out6)
-        dout6_out5 = torch.cat([dout8, out5], 1)
-        dout5 = self.dlayer5(dout6_out5)
-        dout5_out4 = torch.cat([dout5, out4], 1)
-        dout4 = self.dlayer4(dout5_out4)
-        dout4_out3 = torch.cat([dout4, out3], 1)
-        dout3 = self.dlayer3(dout4_out3)
-        dout3_out2 = torch.cat([dout3, out2], 1)
-        dout2 = self.dlayer2(dout3_out2)
-        dout2_out1 = torch.cat([dout2, out1], 1)
-        dout1 = self.dlayer1(dout2_out1)
-        return dout1
+        x = torch.cat([x, out5], 1)
+        x = self.dlayer5(x)
+        x = torch.cat([x, out4], 1)
+        x = self.dlayer4(x)
+        x = torch.cat([x, out3], 1)
+        x = self.dlayer3(x)
+        x = torch.cat([x, out2], 1)
+        x = self.dlayer2(x)
+        x = torch.cat([x, out1], 1)
+        x = self.dlayer1(x)
+        return x
 
 
 class GAN(LightningModule):
@@ -229,30 +232,75 @@ class GAN(LightningModule):
     def forward(self, z):
         return self.generator(z)
 
+    def plot_grad_flow(self):
+        '''Plots the gradients flowing through different layers in the net during training.
+        Can be used for checking for possible gradient vanishing / exploding problems.
+
+        Usage: Plug this function in Trainer class after loss.backwards() as
+        "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+        ave_grads = []
+        max_grads = []
+        layers = []
+        for n, p in self.named_parameters():
+            if (p.requires_grad) and ("bias" not in n):
+                layers.append(n)
+                try:
+                    ave_grads.append(p.grad.abs().mean())
+                    max_grads.append(p.grad.abs().max())
+                except:
+                    layers.remove(n)
+                    pass
+        plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.4, lw=1, color="c")
+        plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.4, lw=1, color="b")
+        plt.hlines(0, 0, len(ave_grads) + 1, lw=2, color="k")
+        plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
+        plt.xlim(left=0, right=len(ave_grads))
+        plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
+        plt.xlabel("Layers")
+        plt.ylabel("average gradient")
+        plt.title("Gradient flow")
+        plt.grid(True)
+        plt.legend([Line2D([0], [0], color="c", lw=4),
+                    Line2D([0], [0], color="b", lw=4),
+                    Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+        plt.savefig("grads.png")
+
+    # def backward(self, loss, optimizer, optimizer_idx: int, *args, **kwargs) -> None:
+    #     if optimizer_idx == 0:
+    #         l1, l2 = loss
+    #         l1.backward()
+    #         l2.backward()
+    #     if optimizer_idx == 1:
+    #         loss.backward()
+    #     optimizer.step()
+    #     optimizer.zero_grad()
+
     def training_step(self, batch, batch_idx, optimizer_idx):
         labels, input_batch, name = batch
         input_batch = input_batch.permute(0, 3, 1, 2) / 255
         labels = labels.permute(0, 3, 1, 2) / 255
+
         # train generator
         if optimizer_idx == 0:
             # generate images
             self.generated_imgs = self(input_batch)
-            g_loss = self.criterionCAE(self.generated_imgs, labels) * .1
+            g_loss = self.criterionCAE(self.generated_imgs, labels) * .5
+            g_loss.backward(retain_graph=True)
 
             recon_fake = self.discriminator(self.generated_imgs)
             errG = torch.mean(torch.abs(recon_fake - self.generated_imgs))
+
             self.log("Generator L1 loss", g_loss)
             self.log("Generator error loss", errG)
             self.log("Generator total loss", g_loss + errG)
 
-            return g_loss + errG
+            return errG
 
         # train discriminator
         if optimizer_idx == 1:
             # Measure discriminator's ability to classify real from generated samples
-
             recon_real = self.discriminator(labels)
-            fake = self.generated_imgs.detach()
+            fake = torch.tensor(self.generated_imgs, requires_grad=False)
             recon_fake = self.discriminator(fake)
             # compute L(x)
             errD_real = torch.mean(torch.abs(recon_real - labels))
@@ -267,15 +315,15 @@ class GAN(LightningModule):
 
             if batch_idx % 500 == 0:
                 fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-                ax1.imshow(input_batch.permute(0, 2, 3, 1)[0])
-                ax2.imshow(self.generated_imgs.permute(0, 2, 3, 1)[0].detach())
-                ax3.imshow(labels.permute(0, 2, 3, 1)[0])
-                self.logger.experiment.log_image('sample', fig)
+                ax1.imshow(input_batch.permute(0, 2, 3, 1)[0].clone().detach().cpu().type(torch.float32))
+                ax2.imshow(self.generated_imgs.permute(0, 2, 3, 1)[0].clone().detach().cpu().type(torch.float32))
+                ax3.imshow(labels.permute(0, 2, 3, 1)[0].clone().detach().cpu().type(torch.float32))
+                self.log("K value", self.k)
+                # self.logger.experiment.log_image('sample', fig)
                 plt.close(fig)
-                if batch_idx % 500 == 0:
-                    torch.save(self.generator.state_dict(), f"Gan/gan_gen_e{self.current_epoch}_batch_{batch_idx}.pt")
-                    torch.save(self.discriminator.state_dict(),
-                               f"Gan/gan_dis_e{self.current_epoch}_batch_{batch_idx}.pt")
+                torch.save(self.generator.state_dict(), f"Gan/gan_gen_e{self.current_epoch}_batch_{batch_idx}.pt")
+                torch.save(self.discriminator.state_dict(),
+                           f"Gan/gan_dis_e{self.current_epoch}_batch_{batch_idx}.pt")
 
             return errD
 

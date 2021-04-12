@@ -1,13 +1,13 @@
 from typing import Any, Optional
 
+import matplotlib.pyplot as plt
+import pytorch_lightning as pl
 import torch
 from torch import nn
 from torch.nn import functional as F
-import pytorch_lightning as pl
 
-from CoreElements import back_to_color, prob2LCHimg, prob2RGBimg
+from CoreElements import prob2RGBimg
 from constant_matrix_creator import gatherLiveClassImbalanceInfo
-import matplotlib.pyplot as plt
 
 
 class BaseColor(pl.LightningModule):
@@ -33,8 +33,14 @@ class BaseColor(pl.LightningModule):
 
 
 class SIGGRAPHGenerator(BaseColor):
-    def __init__(self, im_size, norm_layer=nn.BatchNorm2d, classes=512, imbalance_weights=None):
+    def __init__(self, im_size, norm_layer="gn", classes=512, imbalance_weights=None, norm_layer_eps=1e-5):
         super(SIGGRAPHGenerator, self).__init__()
+
+        def norm_layer_instant(size):
+            if norm_layer == "bn":
+                return nn.BatchNorm2d(size, eps=norm_layer_eps)
+            if norm_layer == "gn":
+                return nn.GroupNorm(1, size, eps=norm_layer_eps)
 
         # This is to keep softmax layer from numercly getting to 0
         if torch.cuda.is_available():
@@ -57,7 +63,7 @@ class SIGGRAPHGenerator(BaseColor):
         model1 += [nn.ReLU(True), ]
         model1 += [nn.Conv2d(SIZE, SIZE, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
-        model1 += [norm_layer(SIZE), ]
+        model1 += [norm_layer_instant(SIZE), ]
         # add a subsampling operation
 
         # Conv2
@@ -65,7 +71,7 @@ class SIGGRAPHGenerator(BaseColor):
         model2 += [nn.ReLU(True), ]
         model2 += [nn.Conv2d(SIZE * 2, SIZE * 2, kernel_size=3, stride=1, padding=1, bias=True), ]
         model2 += [nn.ReLU(True), ]
-        model2 += [norm_layer(SIZE * 2), ]
+        model2 += [norm_layer_instant(SIZE * 2), ]
         # add a subsampling layer operation
 
         # Conv3
@@ -75,7 +81,7 @@ class SIGGRAPHGenerator(BaseColor):
         model3 += [nn.ReLU(True), ]
         model3 += [nn.Conv2d(SIZE * 4, SIZE * 4, kernel_size=3, stride=1, padding=1, bias=True), ]
         model3 += [nn.ReLU(True), ]
-        model3 += [norm_layer(SIZE * 4), ]
+        model3 += [norm_layer_instant(SIZE * 4), ]
         # add a subsampling layer operation
 
         # Conv4
@@ -85,7 +91,7 @@ class SIGGRAPHGenerator(BaseColor):
         model4 += [nn.ReLU(True), ]
         model4 += [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, stride=1, padding=1, bias=True), ]
         model4 += [nn.ReLU(True), ]
-        model4 += [norm_layer(SIZE * 8), ]
+        model4 += [norm_layer_instant(SIZE * 8), ]
 
         # Conv5
         model5 = [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, dilation=2, stride=1, padding=2, bias=True), ]
@@ -94,7 +100,7 @@ class SIGGRAPHGenerator(BaseColor):
         model5 += [nn.ReLU(True), ]
         model5 += [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, dilation=2, stride=1, padding=2, bias=True), ]
         model5 += [nn.ReLU(True), ]
-        model5 += [norm_layer(SIZE * 8), ]
+        model5 += [norm_layer_instant(SIZE * 8), ]
 
         # Conv6
         model6 = [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, dilation=2, stride=1, padding=2, bias=True), ]
@@ -103,7 +109,7 @@ class SIGGRAPHGenerator(BaseColor):
         model6 += [nn.ReLU(True), ]
         model6 += [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, dilation=2, stride=1, padding=2, bias=True), ]
         model6 += [nn.ReLU(True), ]
-        model6 += [norm_layer(SIZE * 8), ]
+        model6 += [norm_layer_instant(SIZE * 8), ]
 
         # Conv7
         model7 = [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, stride=1, padding=1, bias=True), ]
@@ -112,7 +118,7 @@ class SIGGRAPHGenerator(BaseColor):
         model7 += [nn.ReLU(True), ]
         model7 += [nn.Conv2d(SIZE * 8, SIZE * 8, kernel_size=3, stride=1, padding=1, bias=True), ]
         model7 += [nn.ReLU(True), ]
-        model7 += [norm_layer(SIZE * 8), ]
+        model7 += [norm_layer_instant(SIZE * 8), ]
 
         # Conv7
         model8up = [nn.ConvTranspose2d(SIZE * 8, SIZE * 4, kernel_size=4, stride=2, padding=1, bias=True)]
@@ -123,7 +129,7 @@ class SIGGRAPHGenerator(BaseColor):
         model8 += [nn.ReLU(True), ]
         model8 += [nn.Conv2d(SIZE * 4, SIZE * 4, kernel_size=3, stride=1, padding=1, bias=True), ]
         model8 += [nn.ReLU(True), ]
-        model8 += [norm_layer(SIZE * 4), ]
+        model8 += [norm_layer_instant(SIZE * 4), ]
 
         # classification output
         model_class = [nn.Conv2d(SIZE * 4, classes, kernel_size=1, padding=0, dilation=1, stride=1, bias=True), ]
@@ -174,14 +180,14 @@ class SIGGRAPHGenerator(BaseColor):
 
     def CXE(self, predicted, target):
         # # stacked_weights = self.imbalance_weights.repeat(target.shape[0], 1)
-        # stacked_weights = gatherLiveClassImbalanceInfo(target).repeat(target.shape[0], 1)
-        # weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
-        #     [-1, self.size, self.size])
-        # return -(weight * (target * torch.log(predicted)).sum(dim=1)).mean()
-        predicted = F.softmax(predicted, dim=1)
-        # predicted += self.epsilon
+        stacked_weights = gatherLiveClassImbalanceInfo(target).repeat(target.shape[0], 1)
+        weight = torch.gather(stacked_weights, dim=1, index=target.argmax(dim=1).reshape(-1, self.size ** 2)).reshape(
+            [-1, self.size, self.size])
 
-        return - (target * torch.log(predicted + self.epsilon)).sum(dim=1).mean()
+        predicted = F.softmax(predicted, dim=1)
+        return -(weight * (target * torch.log(predicted + self.epsilon)).sum(dim=1)).mean()
+
+        # return - (target * torch.log(predicted + self.epsilon)).sum(dim=1).mean()
 
     def training_step(self, data, batch_idx):
         labels, input_batch, name = data
@@ -193,8 +199,10 @@ class SIGGRAPHGenerator(BaseColor):
             torch.save(self.state_dict(), f"model_e{self.current_epoch}_batch_{batch_idx}.pt")
             if torch.cuda.is_available():
                 rgbs = prob2RGBimg(
-                    F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]))
-                gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0).detach().cpu())
+                    F.softmax(self(input_batch[0].unsqueeze(0)), dim=1).detach().cpu().permute([0, 2, 3, 1]),
+                    torch.device('cpu'))
+                gt = prob2RGBimg(labels[0].type(torch.float).unsqueeze(0).detach().cpu(),
+                                 torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
                 fig, (ax1, ax2) = plt.subplots(1, 2)
                 ax1.imshow(gt[0])
                 ax2.imshow(rgbs[0])
@@ -208,7 +216,8 @@ class SIGGRAPHGenerator(BaseColor):
         return loss
 
     def predict(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None):
-        return prob2RGBimg(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]))
+        return prob2RGBimg(F.softmax(self(batch), dim=1).permute([0, 2, 3, 1]),
+                           torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
 
     def online_predict(self, batch, batch_idx):
         import matplotlib.pyplot as plt
@@ -220,8 +229,8 @@ class SIGGRAPHGenerator(BaseColor):
         pass
 
 
-def siggraph17_L(im_size, pretrained_path=None, weights=None):
-    model = SIGGRAPHGenerator(im_size, imbalance_weights=weights)
+def siggraph17_L(im_size, norm_layer="gn", pretrained_path=None, weights=None):
+    model = SIGGRAPHGenerator(im_size, norm_layer=norm_layer, imbalance_weights=weights)
     if (pretrained_path):
         model.load_state_dict(torch.load(pretrained_path, map_location=torch.device("cpu")))
         model.eval()

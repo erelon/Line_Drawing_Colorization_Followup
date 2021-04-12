@@ -72,11 +72,11 @@ class my_decoders(object):
             img.load()
             img = img.resize((self.size, self.size))
 
-        if torch.cuda.is_available():
-            result = np.asarray(img, dtype=np.float16)
-            im_GT = torch.from_numpy(result).cuda()
-        else:
-            im_GT = np.asarray(img)
+        # if torch.cuda.is_available():
+        #     result = np.asarray(img, dtype=np.uint8)
+        #     im_GT = torch.from_numpy(result).cuda()
+        # else:
+        im_GT = np.asarray(img)
         return im_GT
 
     def my_decoder_GT(self, key, data):
@@ -89,7 +89,7 @@ class my_decoders(object):
         else:
             im_GT = rgb2lch(result)
 
-        im_GT = soft_encode_image(im_GT)
+        im_GT = soft_encode_image(im_GT, torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
 
         if torch.isnan(im_GT).any():
             return None
